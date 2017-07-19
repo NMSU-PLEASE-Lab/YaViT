@@ -1,0 +1,215 @@
+<div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h3 class="page-header">Job Detail </h3>
+        </div>
+    </div>
+
+    <div class="row margin-bottom20">
+        <div class="col-lg-8">
+            <table class="table table-bordered table-striped">
+                <tr>
+                    <td><b>Application Name</b></td>
+                    <td>{{currentJobDetail.ApplicationName}}</td>
+                    <td><b>Job Name</b></td>
+                    <td>{{currentJobDetail.name}}</td>
+                    <td><b>Job Run</b></td>
+                    <td>{{currentJobDetail._id}}</td>
+
+                </tr>
+                <tr>
+                    <td><b>Submitted Date</b></td>
+                    <td>{{currentJobDetail.queue_time_formatted}}</td>
+                    <td><b>Start Date</b></td>
+                    <td>{{currentJobDetail.start_time_formatted}}</td>
+                    <td><b>End Date</b></td>
+                    <td>{{currentJobDetail.end_time_formatted}}</td>
+
+                </tr>
+                <tr>
+                    <td><b>Nodes Used</b></td>
+                    <td>{{currentJobDetail.nodes.length}}</td>
+                    <td><b>Memory Used</b></td>
+                    <td>{{currentJobDetail.mem_used}}</td>
+                    <td><b>Memory Bytes</b></td>
+                    <td>{{currentJobDetail.mem_bytes}}</td>
+                </tr>
+
+            </table>
+
+        </div>
+    </div>
+
+    <div id="event-alert" class="row margin-top20" ng-show="!showEventChart">
+        <div class="col-lg-12">
+            <div class="alert alert-info alert-dismissable">
+                <a class="close" onclick="$('#event-alert').addClass('hide');" style="color: black;">&times;</a>
+                <strong>Information!</strong><br/>
+                You can monitor your application and collect realtime information of your running job. For further
+                information on how to do this please contact omarraad@nmsu.edu.
+            </div>
+        </div>
+    </div>
+
+    <div class="row margin-top20" ng-show="showEventChart">
+        <div class="col-lg-12">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    <b> Dual Events </b>
+                </div>
+                <div class="panel-body margin-bottom20">
+                    <div id="event-dashboard-dual" style="">
+                        <div id="event-control-dual" style="width: 95%;"></div>
+                        <div id="event-chart-dual" style="width: 95%;"></div>
+
+                    </div>
+                    <div id="junk_div" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h4 class="page-header">System Metrics </h4>
+        </div>
+    </div>
+
+    <div class="row margin-top20">
+        <div class="form-group col-lg-3">
+            <label for="nodesSelector">Nodes:</label>
+            <div id="nodesSelector"
+                 isteven-multi-select
+                 input-model="nodesSelectorOptions"
+                 output-model="nodesSelectorOptionsOutput"
+                 button-label="0"
+                 item-label="name"
+                 helper-elements="filter none"
+                 helper-text="Selection limit is 4"
+                 tick-property="ticked"
+                 on-item-click="nodesOptionsChanged(data)"
+                 max-height="150px"
+
+            >
+            </div>
+        </div>
+
+
+        <div class="form-group col-lg-3">
+            <label for="metricsSelector">Metrics:</label>
+            <div id="metricsSelector"
+                 isteven-multi-select
+                 input-model="metricsSelectorOptions"
+                 output-model="metricsSelectorOptionsOutput"
+                 button-label="name"
+                 item-label="name"
+                 helper-elements="filter none"
+                 helper-text="Selection limit is 3"
+                 tick-property="ticked"
+                 on-item-click="metricsOptionsChanged(data)"
+                 max-height="150px"
+            >
+            </div>
+        </div>
+
+
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div>
+                <rzslider rz-slider-model="dateTimeSlider.minValue"
+                          rz-slider-high="dateTimeSlider.maxValue"
+                          rz-slider-options="dateTimeSlider.options"></rzslider>
+            </div>
+        </div>
+    </div>
+    <div ng-repeat="node in nodesSelectorOptionsOutput track by node.value">
+        <div ng-repeat="metric in metricsSelectorOptionsOutput track by metric.name">
+            <div class="col-lg-12 padding-0 padding-right10">
+                <div class="panel panel-green">
+                    <div class="panel-heading">
+                        <b>{{node.name}}</b>: {{metric.name | uppercase}}
+                    </div>
+                    <div class="panel-body">
+                        <div class="col-lg-3">
+                            <div isteven-multi-select
+                                 input-model="selectedMetricsValueOptions[node.name][metric.name]"
+                                 output-model="selectedMetricsValueOptionsOutput[node.name][metric.name]"
+                                 button-label="0"
+                                 item-label="name"
+                                 helper-elements="filter none"
+                                 helper-text="Selection limit is 6"
+                                 tick-property="ticked"
+                                 max-height="150px"
+                                 on-item-click="metricsValueOptionsChanged(metric.name,node,data)">
+                            </div>
+
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="form-group row">
+                                <label for="{{metric.name}}-node-{{node.value}}-chartype"
+                                       class="col-lg-4 text-right">Chart Type:</label>
+                                <div class="col-lg-8">
+                                    <select class="form-control" id="{{metric.name}}-node-{{node.value}}-chartype" ng-model="selectedChartType[node.value][metric.name]"
+                                            ng-options="x for x in ['Line','Scatter']"
+                                    ng-change = "chartTypeChange(metric.name,node)">
+
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!--<div class="col-lg-6 pull-right text-right">-->
+
+                            <!--&lt;!&ndash;<div class="pull-right"  ng-show="selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0">&ndash;&gt;-->
+                            <!--<div class="pull-right">-->
+
+                                <!--<button class="btn btn-sm btn-default" title="First"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'first',node)"><i-->
+                                        <!--class="fa fa-angle-double-left"></i></button>-->
+                                <!--<button class="btn btn-sm btn-default"-->
+                                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].prev_cursor==0"-->
+                                        <!--title="Previous"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'prev',node)"><i-->
+                                        <!--class="fa fa-angle-left"></i>-->
+                                <!--</button>-->
+                                <!--<button class="btn btn-sm btn-default"-->
+                                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].next_cursor==0"-->
+                                        <!--title="Next"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'next',node)"><i-->
+                                        <!--class="fa fa-angle-right"></i>-->
+                                <!--</button>-->
+                                <!--<button class="btn btn-sm btn-default" title="Last"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'last',node)"><i-->
+                                        <!--class="fa fa-angle-double-right"></i></button>-->
+                            <!--</div>-->
+
+                            <!--<div class="form-group pull-right margin-right10">-->
+
+                                <!--<button ng-show="!(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
+                                        <!--class="btn btn-sm btn-primary" title="all"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
+                                <!--</button>-->
+
+                                <!--<button ng-show="(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
+                                        <!--class="btn btn-sm btn-default" title="all"-->
+                                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
+                                <!--</button>-->
+                            <!--</div>-->
+
+
+                        <!--</div>-->
+
+                    </div>
+
+                    <div class="panel-body margin-bottom10" style="height:380px;overflow:auto"
+                         id="{{metric.name}}-chart-container-node-{{node.value}}">
+
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,66 @@
+<div class="row" style="margin-top: 30px; margin-bottom: 50px;">
+
+    <form class="col-lg-12 form-inline" id="time-buttons">
+        <div class="form-group">
+
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==1 }" ng-click="timeSelected(1)" type="button"
+                    class="time-button btn btn-sm btn-primary">1 hr
+            </button>
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==2 }" ng-click="timeSelected(2)" type="button"
+                    class="time-button btn btn-sm btn-primary">1 day
+            </button>
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==3 }" ng-click="timeSelected(3)" type="button"
+                    class="time-button btn btn-sm btn-primary">1 week
+            </button>
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==4 }" ng-click="timeSelected(4)" type="button"
+                    class="time-button btn btn-sm btn-primary">1 month
+            </button>
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==5}" ng-click="timeSelected(5)" type="button"
+                    class="time-button btn btn-sm btn-primary">3 months
+            </button>
+            <button ng-class="{ 'active': selectedIndexGlobalTimeFilter==6 }" ng-click="timeSelected(6)" type="button"
+                    class="time-button btn btn-sm btn-primary">Year
+            </button>
+        </div>
+        <span><b>OR</b></span>
+        <div class="form-group">
+            <input type="text" class="input-sm form-control time-filter-input-sm" uib-datepicker-popup="yyyy-MM-dd"
+                   is-open="dateFromPopUp.opened"
+                   ng-model="fromDate.date"
+                   datepicker-options="datePickerOptions"
+                   close-text="Close" alt-input-formats="altInputFormats"
+                   placeholder="DateFrom"
+                   ng-click="openDateFrom()" ng-change="dateFromChanged()" required>
+
+        </div>
+        <div class="input-group input-group-sm">
+
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="fromDate.hour" min="0" max="23" placeholder="h">
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="fromDate.min" min="0" max="59" placeholder="m">
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="fromDate.sec" min="0" max="59" placeholder="s">
+        </div>
+
+        <span><b>to</b></span>
+
+        <div class="form-group">
+            <input type="text" class="input-sm form-control time-filter-input-sm" uib-datepicker-popup="yyyy-MM-dd"
+                   is-open="dateToPopUp.opened"
+                   ng-model="toDate.date"
+                   datepicker-options="datePickerOptions"
+                   close-text="Close" alt-input-formats="altInputFormats"
+                   placeholder="DateTo"
+                   ng-click="openDateTo()" ng-change="dateToChanged()" required>
+        </div>
+        <div class="input-group input-group-sm">
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="toDate.hour" min="0" max="23" placeholder="h">
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="toDate.min" min="0" max="59" placeholder="m">
+            <input type="number" class="form-control input-sm time-filter-input-xs" ng-model="toDate.sec" min="0" max="59" placeholder="s">
+        </div>
+        <div class="form-group">
+            <button type="submit" ng-click="timeSelected(7)"
+                    class="time-button btn btn-sm btn-primary">Go
+            </button>
+        </div>
+    </form>
+</div>
+

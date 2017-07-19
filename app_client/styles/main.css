@@ -1,0 +1,348 @@
+/* Everything but the jumbotron gets side spacing for mobile first views */
+.header,
+.marketing,
+.footer {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Custom page header */
+.header {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+/* Make the masthead heading the same height as the navigation */
+.header h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 40px;
+    padding-bottom: 19px;
+}
+
+/* Custom page footer */
+.footer {
+    padding-top: 19px;
+    color: #777;
+    border-top: 1px solid #e5e5e5;
+}
+
+/* Customize container */
+@media (min-width: 768px) {
+    .container {
+        max-width: 730px;
+    }
+}
+
+.container-narrow > hr {
+    margin: 30px 0;
+}
+
+/* Main marketing message and sign up button */
+.jumbotron {
+    text-align: center;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.jumbotron .btn {
+    font-size: 21px;
+    padding: 14px 24px;
+}
+
+/* Supporting marketing content */
+.marketing {
+    margin: 40px 0;
+}
+
+.marketing p + h4 {
+    margin-top: 28px;
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+    /* Remove the padding we set earlier */
+    .header,
+    .marketing,
+    .footer {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Space out the masthead */
+    .header {
+        margin-bottom: 30px;
+    }
+
+    /* Remove the bottom border on the jumbotron for visual effect */
+    .jumbotron {
+        border-bottom: 0;
+    }
+}
+
+a {
+    color: #b8c7ce;
+}
+
+a:focus, a:hover {
+    /* color: #fff; */
+    /* background: #1e282c !important; */
+    /* border-left:4px solid; */
+    /* border-left-color: #605ca8; */
+}
+
+.nav > li.active > a {
+    color: #fff;
+    background: #1e282c;
+    border-left-color: #605ca8;
+}
+
+.sidebar-nav ul li a {
+    color: #b8c7ce;
+}
+
+.sidebar-nav ul li a:focus, .sidebar-nav ul li a:hover {
+    color: #fff;
+    background: rgba(43, 53, 58, 0.89) !important;
+    border-left: 4px solid;
+    border-left-color: #605ca8;
+    padding-left: 11px;
+}
+
+.sidebar-nav ul li.active > a {
+    color: #fff;
+    background: #1e282c;
+    border-left: 4px solid;
+    border-left-color: #605ca8;
+    padding-left: 11px;
+
+}
+
+.navbar-default {
+    border-color: #c3bebe;
+}
+
+.navbar-default .navbar-brand {
+    color: #5a5a5a;
+}
+
+.navbar-brand {
+    font-size: 19px;
+    font-weight: bold;
+    font-family: sans-serif, serif;
+}
+
+.dropdown-toggle i.fa.fa-user.fa-fw {
+    font-size: 18px;
+}
+
+.navbar {
+    background-color: #605ca8;
+}
+
+.navbar-brand {
+    color: #fff !important;
+    text-shadow: 0 1px 1px #27333e;
+
+}
+
+a.dropdown-toggle {
+    color: #fff;
+}
+
+.nav .open > a.dropdown-toggle, a {
+    color: #605ca8;
+}
+
+a.dropdown-toggle:hover, a.dropdown-toggle:active, a.dropdown-toggle:focus {
+    color: #605ca8;
+}
+
+
+.page-header {
+    border-bottom: 1px solid #b7b7b7;
+}
+
+.navbar-default {
+    border: none;
+}
+
+.sidebar ul li {
+    border-bottom: 1px solid #363636;
+}
+
+.sidebar > li.nav-header {
+    color: #e0e0e0;
+    background: #1a2226;
+}
+
+.sidebar li.nav-header {
+    padding: 10px 25px 10px 15px;
+    font-size: 12px;
+    color: #4b646f;
+    background: #1a2226;
+
+}
+
+.sidebar-panel {
+    padding: 10px 25px 5px 15px;
+    font-size: 11px;
+}
+
+.sidebar-panel > .info, .sidebar-panel > .info > a {
+    color: #fff;
+}
+
+.sidebar-panell > .info {
+    padding: 5px 5px 5px 15px;
+    line-height: 1;
+    position: absolute;
+    left: 55px;
+}
+
+.margin-top5 {
+    margin-top: 5px;
+}
+
+.margin-top10 {
+    margin-top: 10px;
+}
+
+.margin-top20 {
+    margin-top: 20px;
+}
+
+.margin-bottom10 {
+    margin-bottom: 10px;
+}
+
+.margin-bottom20 {
+    margin-bottom: 20px;
+}
+
+.margin-left10 {
+    margin-left: 10px;
+}
+
+.margin-left20 {
+    margin-left: 20px;
+}
+
+.margin-right10 {
+    margin-right: 10px;
+}
+
+.margin-right20 {
+    margin-right: 20px;
+}
+
+.padding-0 {
+    padding: 0;
+}
+
+.padding-top10 {
+    padding-top: 10px;
+}
+
+.padding-top20 {
+    padding-top: 20px;
+}
+
+.padding-bottom10 {
+    padding-bottom: 10px;
+}
+
+.padding-bottom20 {
+    padding-bottom: 20px;
+}
+
+.padding-left10 {
+    padding-left: 10px;
+}
+
+.padding-left20 {
+    padding-left: 20px;
+}
+
+.padding-right10 {
+    padding-right: 10px;
+}
+
+.padding-right20 {
+    padding-right: 20px;
+}
+
+table.dataTable thead th.sorting:after {
+    content: "\f0dc";
+    color: #ddd;
+    font-size: 0.8em;
+    padding-top: 0.12em;
+}
+
+table.dataTable thead th.sorting_asc:after {
+    content: "\f0de";
+}
+
+table.dataTable thead th.sorting_desc:after {
+    content: "\f0dd";
+}
+
+.slider.slider-horizontal .slider-track {
+    height: auto !important;
+}
+
+.slider.slider-horizontal {
+    background: #d0cccc;
+}
+
+.time-filter-input-sm {
+    width: 110px !important;
+    text-align: center;
+    padding-right: 1px !important;
+    padding-left: 1px !important;
+}
+
+.time-filter-input-xs {
+    width: 42px !important;
+    text-align: center;
+    padding-right: 1px !important;
+    padding-left: 1px !important;
+}
+
+.ui-select-multiple input.ui-select-search {
+    width: 100% !important;
+    cursor: pointer !important;
+}
+#page-wrapper{
+    overflow-y: auto !important;
+    padding-bottom:200px;
+}
+
+.start-right .multiSelect .checkboxLayer{
+    right:0;
+}
+
+.active-panel .table-striped > tbody > tr:nth-child(2n+1) > td, .active-panel .table-striped > tbody > tr:nth-child(2n+1) > th {
+    background-color: #e8d9b6;
+}
+
+/*fancy checkbox*/
+.form-group input[type="checkbox"] {
+    display: none;
+}
+
+.form-group input[type="checkbox"] + .btn-group > label span {
+    width: 20px;
+}
+
+.form-group input[type="checkbox"] + .btn-group > label span:first-child {
+    display: none;
+}
+.form-group input[type="checkbox"] + .btn-group > label span:last-child {
+    display: inline-block;
+}
+
+.form-group input[type="checkbox"]:checked + .btn-group > label span:first-child {
+    display: inline-block;
+}
+.form-group input[type="checkbox"]:checked + .btn-group > label span:last-child {
+    display: none;
+}

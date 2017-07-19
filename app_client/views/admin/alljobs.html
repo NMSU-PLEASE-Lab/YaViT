@@ -1,0 +1,57 @@
+<div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h3 class="page-header">All Jobs</h3>
+        </div>
+    </div>
+    <div ng-include="'views/user/global-filter.html'"></div>
+
+    <div class="row margin-top10">
+        <div class="col-lg-12 table-responsive">
+            <table datatable="" dt-options="dtJobsOptions" dt-columns="dtJobsColumns"
+                   class="table table-bordered table-hover" dt-instance="dtJobsInstance">
+
+            </table>
+        </div>
+    </div>
+
+
+    <!--Ok Modal For showing Messages and Warnings -->
+    <div class="modal fade" id="ok-modal" role="dialog" data-backdrop="static" data-keyboard="false" tabindex="-1"
+        aria-hidden="true" style="padding-top:10%; overflow-y:visible;">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">{{okModalHeader}}</h4>
+                </div>
+                <div class="modal-body">
+                    <p>{{okModalBody}}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--Ok/Cancel Modal For showing Messages and Warnings -->
+    <div class="modal fade" id="ok-cancel-modal" data-backdrop="static" data-keyboard="false" tabindex="-1"
+         role="dialog" aria-hidden="true" style="padding-top:10%; overflow-y:visible;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">{{okCancelModalHeader}}</h4>
+                </div>
+                <div class="modal-body" style="height: 150px;">
+                    <p ng-bind-html="okCancelModalBody"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id = "ok-cancel-modal-confirm-btn" class="btn btn-primary" ng-click="okCancelModalConfirm(OkCancelModalCallback)" data-dismiss="modal">Ok</button>
+                    <button type="button" id = "ok-cancel-modal-cancel-btn" class="btn btn-warning" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

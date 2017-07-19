@@ -1,0 +1,14 @@
+{
+  "name": "update",
+  "homepage": "https://github.com/jonschlinkert/update",
+  "version": "0.7.4",
+  "_release": "0.7.4",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.7.4",
+    "commit": "8d4b479f62801f666633d034c2eed971af4d8fbc"
+  },
+  "_source": "https://github.com/jonschlinkert/update.git",
+  "_target": "^0.7.4",
+  "_originalSource": "update"
+}
