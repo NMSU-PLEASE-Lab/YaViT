@@ -1,2 +1,2 @@
-# YaViT
-Yet another Viz Tool -- a web-based vizualization of HPC application and system data
+# SRG
+A collection of research group stuff just for me
