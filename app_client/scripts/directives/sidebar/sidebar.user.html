@@ -1,0 +1,30 @@
+<div class="navbar-default sidebar" role="navigation">
+
+    <div class="sidebar-nav navbar-collapse">
+        <div class="sidebar-panel">
+            <div class="info">
+                <p>{{serverTime}}</p>
+            </div>
+        </div>
+
+        <ul class="nav in" id="side-menu">
+
+            <li class="nav-header">NAVIGATION</li>
+
+            <li ui-sref-active="active">
+                <a ui-sref="user.home"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+            </li>
+            <li ui-sref-active="active">
+                <a ui-sref="user.jobhome({app_name:''})"><i class="fa fa-eye fa-fw"></i> Jobs Summary</a>
+            </li>
+            <li ui-sref-active="active">
+                <a ui-sref="user.myjobs({app_name:''})"><i class="fa fa-th-large fa-fw"></i> All Jobs</a>
+            </li>
+
+        </ul>
+    </div>
+</div>
+
+
+
+

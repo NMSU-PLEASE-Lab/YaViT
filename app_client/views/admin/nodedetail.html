@@ -1,0 +1,102 @@
+<div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h3 class="page-header">Node Detail</h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group col-lg-3">
+            <label for="nodesSelector">Nodes:</label>
+            <div id="nodesSelector"
+                 isteven-multi-select
+                 input-model="nodesSelectorOptions"
+                 output-model="nodesSelectorOptionsOutput"
+                 button-label="0"
+                 item-label="name"
+                 helper-elements="filter none"
+                 helper-text="Selection limit is 4"
+                 tick-property="ticked"
+                 on-item-click="nodesOptionsChanged(data)"
+                 max-height="150px">
+            </div>
+        </div>
+
+
+        <div class="form-group col-lg-3">
+            <label for="metricsSelector">Metrics:</label>
+            <div id="metricsSelector"
+                 isteven-multi-select
+                 input-model="metricsSelectorOptions"
+                 output-model="metricsSelectorOptionsOutput"
+                 button-label="name"
+                 item-label="name"
+                 helper-elements="filter none"
+                 helper-text="Selection limit is 3"
+                 tick-property="ticked"
+                 on-item-click="metricsOptionsChanged(data,metricsSelectorOptions)"
+                 group-property="msGroup"
+                 max-height="150px">
+            </div>
+        </div>
+    </div>
+    <!--<div ng-include="'views/admin/global-filter.html'"></div>-->
+
+    <div ng-repeat="node in nodesSelectorOptionsOutput track by node.value">
+        <div ng-repeat="metric in metricsSelectorOptionsOutput track by metric.name">
+            <div class="col-lg-12 padding-0 padding-right10">
+                <div class="panel panel-green">
+                    <div class="panel-heading">
+                        <b>{{node.name}}</b>: {{metric.name | uppercase}}
+                    </div>
+                    <div class="panel-body margin-top10 margin-bottom10 ">
+                        <div class="col-lg-3">
+                            <div isteven-multi-select
+                                 input-model="selectedMetricsValueOptions[node.name][metric.name]"
+                                 output-model="selectedMetricsValueOptionsOutput[node.name][metric.name]"
+                                 button-label="0"
+                                 item-label="name"
+                                 helper-elements="filter none"
+                                 helper-text="Selection limit is 6"
+                                 tick-property="ticked"
+                                 max-height="150px"
+                                 on-item-click="metricsValueOptionsChanged(metric.name,node,data)">
+                            </div>
+
+                        </div>
+                        <!--<div class="col-lg-7 pull-right text-right"-->
+                             <!--ng-show="selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0">-->
+                            <!--<button class="btn btn-sm btn-default" title="First"-->
+                                    <!--ng-click="metricValueChanged(metric.name,'first',node)"><i-->
+                                    <!--class="fa fa-angle-double-left"></i></button>-->
+                            <!--<button class="btn btn-sm btn-default"-->
+                                    <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].prev_cursor==0"-->
+                                    <!--title="Previous"-->
+                                    <!--ng-click="metricValueChanged(metric.name,'prev',node)"><i-->
+                                    <!--class="fa fa-angle-left"></i>-->
+                            <!--</button>-->
+                            <!--<button class="btn btn-sm btn-default"-->
+                                    <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].next_cursor==0"-->
+                                    <!--title="Next"-->
+                                    <!--ng-click="metricValueChanged(metric.name,'next',node)"><i-->
+                                    <!--class="fa fa-angle-right"></i>-->
+                            <!--</button>-->
+                            <!--<button class="btn btn-sm btn-default" title="Last"-->
+                                    <!--ng-click="metricValueChanged(metric.name,'last',node)"><i-->
+                                    <!--class="fa fa-angle-double-right"></i></button>-->
+                        <!--</div>-->
+
+
+                    </div>
+
+                    <div class="panel-body margin-bottom20" style="height:500px;"
+                         id="{{metric.name}}-chart-container-node-{{node.value}}">
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>

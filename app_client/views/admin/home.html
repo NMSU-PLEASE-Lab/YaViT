@@ -1,0 +1,44 @@
+    <div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h3 class="page-header">Dashboard</h3>
+        </div>
+    </div>
+
+    <div class="row margin-top20">
+
+        <stats number="{{model.nodes.length}}" comments="Total Nodes" colour="primary" type="server"
+               goto="admin.nodedetail"></stats>
+        <stats number="{{jobsCount}}" comments="Total Jobs" colour="green" type="ellipsis-h" goto="admin.alljobs"></stats>
+
+    </div>
+    <div class="row">
+        <div class="col-lg-4 col-md-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-red"><i class="fa  fa-dot-circle-o"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Critical Nodes</span>
+                    <span class="info-box-number">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-yellow"><i class="fa fa-circle-o-notch"></i></span>
+
+                <div class="info-box-content">
+                    <span class="info-box-text">Busy Nodes</span>
+                    <span class="info-box-number">0</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="row" id="critical-nodes">
+        <div class="col-lg-12">
+            <h4 class="page-header">Critical Nodes</h4>
+        </div>
+    </div>
+
+</div>

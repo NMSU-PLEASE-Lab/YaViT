@@ -1,0 +1,36 @@
+{
+  "name": "ui-select-infinity",
+  "version": "0.1.6",
+  "homepage": "https://github.com/hyzhak/ui-select-infinity",
+  "authors": [
+    "Eugene Krevenets <ievgenii.krevenets@gmail.com> (http://hyzhak.github.io)"
+  ],
+  "description": "Extend `ui-select` with feature of infinity scrolling",
+  "main": "lib/index.js",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "angular",
+    "ui-select",
+    "infinity"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "0.1.6",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.1.6",
+    "commit": "4019bb36e779c008bfaf9f7394946a43edde9896"
+  },
+  "_source": "https://github.com/hyzhak/ui-select-infinity.git",
+  "_target": "^0.1.6",
+  "_originalSource": "ui-select-infinity",
+  "_direct": true
+}
