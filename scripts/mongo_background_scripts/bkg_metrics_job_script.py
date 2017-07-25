@@ -2,13 +2,12 @@ import time
 import multiprocessing as mp
 
 import pymongo
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo import MongoClient
 import logging
 
 import sys
 
-LOG_FILENAME = 'error_log.out'
 logging.basicConfig(stream=sys.stderr,
                     level=logging.DEBUG,
                     )
@@ -20,7 +19,7 @@ def unix_time_millis(dt):
     return int(float(dt.strftime("%s.%f")) * 1000)
 
 
-# for metric collection calculate and insert minutely,hourly and daily averages
+# 1. for metric collection calculate and insert minutely,hourly and daily averages
 def processCollection(name, structure):
     while True:
         childClient = None
@@ -226,6 +225,7 @@ def processCollection(name, structure):
             time.sleep(90)
 
 
+# 2. Check what metrics exist for all jobs and add a field 'metrices' to the job collection
 def jobMetricsChecker():
     while True:
         client = None
@@ -273,12 +273,54 @@ def jobMetricsChecker():
             client.close()
             time.sleep(90)
 
+# 3. Clear old data
+def deleteOldData():
+    while True:
+        client = None
+        try:
+            client = MongoClient(mongoDbUrl)
+            db = client.hpc_monitoring
+            schemaCollection = db.schema
+
+            # get all metrics name from schema
+            metricSchemas = schemaCollection.find({'type': 'metrics'})
+            for metric in metricSchemas:
+                metricMainCollection = db[metric['name']]
+                metricMinutelyCollection = db[metric['name'] + '.minutely']
+                metricHourlyCollection = db[metric['name'] + '.hourly']
+
+                # Get timestamp for 90 days ago (for main collection)
+                timeBefore90 = unix_time_millis(datetime.now() - timedelta(days=90))
+
+                # delete documents older than 90 days for main collection
+                metricMainCollection.delete_many({"Timestamp": {'$lte': timeBefore90}})
+
+                # Get timestamp for 180 days ago (for minutely collection)
+                timeBefore180 = unix_time_millis(datetime.now() - timedelta(days=180))
+
+                # delete documents older than 180 days for minutely collection
+                metricMinutelyCollection.delete_many({"Timestamp": {'$lte': timeBefore180}})
+
+                # Get timestamp for 365 days ago (for hourly collection)
+                timeBefore365 = unix_time_millis(datetime.now() - timedelta(days=365))
+
+                # delete documents older than 365 days for hourly collection
+                metricHourlyCollection.delete_many({"Timestamp": {'$lte': timeBefore365}})
+
+
+
+        except BaseException as e:
+            logging.error(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " : " + str(e))
+        finally:
+            client.close()
+            time.sleep(300*60) # sleep 5 hour
 
 # for metric collection calculate and insert minutely,hourly and daily averages
 if __name__ == '__main__':
     # Separately process each metrics using process
     metricProcesses = {}
     jobProcess = None
+    clearOldProcess = None
 
     while True:
 
@@ -294,20 +336,23 @@ if __name__ == '__main__':
                 for key in metric['non_metric_fields']:
                     structure.pop(key, None)
                 schema[metric['name']] = structure
-            # Close mongo client
-            parentClient.close()
 
-            # Create processes for metric collection
+            # 1. Create processes for metric collection (to calculate periodic averages)
             for metric in schema:
                 # if the process doesnot exist for metrics or it is killed
                 if metric not in metricProcesses or (not (metricProcesses[metric].is_alive())):
                     metricProcesses[metric] = mp.Process(target=processCollection, args=(metric, schema[metric]))
                     metricProcesses[metric].start()
 
-            # Create process to check what metrics exist for all jobs
+            # 2. Create process to check what metrics exist for all jobs
             if jobProcess is None or (not (jobProcess.is_alive())):
                 jobProcess = mp.Process(target=jobMetricsChecker())
                 jobProcess.start()
+
+            # 3. Create process to clear the old data
+            if clearOldProcess is None or (not (clearOldProcess.is_alive())):
+                clearOldProcess = mp.Process(target=jobMetricsChecker())
+                clearOldProcess.start()
 
         except BaseException  as e:
             logging.error(datetime.now().strftime('%Y-%m-%d %H:%M:%S')+" : "+str(e))
