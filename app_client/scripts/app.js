@@ -105,7 +105,7 @@ angular
             })
 
             .state('user.jobhome', {
-                url: '/jobhome?app_name',
+                url: '/jobhome/{app_name}',
                 reload: true,
                 controller: 'userHomeCtrl',
                 templateUrl: 'views/user/job-home.html',
@@ -137,7 +137,7 @@ angular
                 }
             })
             .state('user.myjobs', {
-                url: '/myjobs?app_name',
+                url: '/myjobs/{app_name}',
                 reload: true,
                 controller: 'userMyJobCtrl',
                 templateUrl: 'views/user/myjobs.html',
@@ -153,7 +153,7 @@ angular
                 }
             })
             .state('user.jobdetail', {
-                url: '/jobdetail?jobId&jobName',
+                url: '/jobdetail/{jobId}/{jobName}',
                 reload: true,
                 controller: 'userJobDetailCtrl',
                 templateUrl: 'views/user/jobdetail.html',

@@ -8,12 +8,11 @@ var bodyParser = require('body-parser');
 var morgan = require('morgan');
 var passport = require('passport');
 
-
 // app_config
-// var SERVER_PORT = 8001; // set port
+// var SERVER_PORT = 8000; // set port
 
 // for development purposes only
-var SERVER_PORT = process.env.PORT || 8001; // set port
+var SERVER_PORT = process.env.PORT || 8000; // set port
 
 //root path
 rootPath = __dirname;
@@ -43,9 +42,6 @@ require('./app_server/config/passport');
 
 //Bring in the routes for the API
 require('./app_server/routes/api')(app);
-
-// api
-// require('./app_server/api')(app);
 
 
 //start app
