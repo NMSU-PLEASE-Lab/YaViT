@@ -8,8 +8,8 @@
  */
 angular.module('hpcMonitoringApp')
     .controller('userHomeCtrl',
-        ['$scope', '$location', 'authentication', '$http', 'DTOptionsBuilder', 'DTColumnBuilder','$compile','$state','$rootScope','$timeout','$stateParams',
-            function ($scope, $location, authentication, $http, DTOptionsBuilder, DTColumnBuilder,$compile,$state,$rootScope,$timeout,$stateParams) {
+        ['$scope', '$location', 'authentication', '$http', 'DTOptionsBuilder', 'DTColumnBuilder', '$compile', '$state', '$rootScope', '$timeout', '$stateParams',
+            function ($scope, $location, authentication, $http, DTOptionsBuilder, DTColumnBuilder, $compile, $state, $rootScope, $timeout, $stateParams) {
 
                 $scope.user = authentication.currentUser();
                 if ($scope.user.usertype !== 2)
@@ -23,15 +23,14 @@ angular.module('hpcMonitoringApp')
                 $scope.activeJobs = [];
                 $scope.recentJobs = [];
                 $scope.runningJobsCount = 0;
-                                $scope.applicationName = '';
+                $scope.applicationName = '';
+                $scope.configJobQualityData = [];
                 $scope.pageTitle = 'Jobs Summary <small>( All )';
-                if (typeof $stateParams.app_name !=='undefined' && $stateParams.app_name !== '') {
+                if (typeof $stateParams.app_name !== 'undefined' && $stateParams.app_name !== '') {
                     $scope.applicationName = $stateParams.app_name;
-                    $scope.pageTitle =  'Jobs Summary'+ " <small>( "+ $stateParams.app_name+" )</small>";
+                    $scope.pageTitle = 'Jobs Summary' + " <small>( " + $stateParams.app_name + " )</small>";
                 }
 
-                /* Count of Jobs */
-                getJobsCount();
 
                 $scope.onJobRunClicked = function (id, name) {
                     $state.go('user.jobdetail', {'jobId': id, 'jobName': name});
@@ -71,7 +70,7 @@ angular.module('hpcMonitoringApp')
                     .withOption('ajax', function (data, callback, settings) {
                         $http({
                             method: 'GET',
-                            url: '/api/getActiveJobs' + '?owner=' + $scope.user.username +"&app_name="+$scope.applicationName
+                            url: '/api/getActiveJobs' + '?owner=' + $scope.user.username + "&app_name=" + $scope.applicationName
                         }).then(function (response) {
                             $scope.activeJobs = response.data;
                             var counts = _.countBy(response.data, function (item) {
@@ -90,7 +89,7 @@ angular.module('hpcMonitoringApp')
                             $compile(nRow)($scope);
                         });
                 $scope.dtRecentJobsOptions = DTOptionsBuilder.newOptions().withOption('paging', false)
-                    .withOption('searching', false).withOption('bInfo', false).withOption('scrollY', '200px').withOption('scrollCollapse',true)
+                    .withOption('searching', false).withOption('bInfo', false).withOption('scrollY', '200px').withOption('scrollCollapse', true)
                     .withOption('order', [[0, "desc"]])
                     .withOption('columnDefs', [{
                         "targets": 3,
@@ -100,7 +99,7 @@ angular.module('hpcMonitoringApp')
                     .withOption('ajax', function (data, callback, settings) {
                         $http({
                             method: 'GET',
-                            url: '/api/getRecentJobs' + '?owner=' + $scope.user.username  +"&app_name="+$scope.applicationName
+                            url: '/api/getRecentJobs' + '?owner=' + $scope.user.username + "&app_name=" + $scope.applicationName
                         }).then(function (response) {
                             $scope.recentJobs = response.data;
                             callback(response.data)
@@ -118,10 +117,10 @@ angular.module('hpcMonitoringApp')
                     }).withTitle('Job Number'),
                     DTColumnBuilder.newColumn('name').withTitle('Name'),
                     DTColumnBuilder.newColumn(null).withTitle('Status').renderWith(function (data, type, full) {
-                        if(typeof full.start_time==='undefined' ||full.start_time=='')
-                           return "<span class='label label-warning'>Queued</span>";
+                        if (typeof full.start_time === 'undefined' || full.start_time == '')
+                            return "<span class='label label-warning'>Queued</span>";
                         else
-                           return "<span class='label label-primary'>Running</span>";
+                            return "<span class='label label-primary'>Running</span>";
                     })
                 ];
 
@@ -150,26 +149,177 @@ angular.module('hpcMonitoringApp')
                 $scope.unixToJsTime = function ($unixTime) {
                     return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
                 };
+                /* Count of Jobs */
+                getJobsCount();
+                getRunQualityByConfiguration();
+                refreshAllData();
+                /*Refresh data every fixed interval */
 
-                refreshAllData(); /*Refresh data every fixed interval */
-
-                function getJobsCount()
-                {
-                    $http.get('/api/getJobsCount' + '?owner=' + $scope.user.username+ "&app_name="+$scope.applicationName).then(function (response) {
+                function getJobsCount() {
+                    $http.get('/api/getJobsCount' + '?owner=' + $scope.user.username + "&app_name=" + $scope.applicationName).then(function (response) {
                         $scope.jobsCount = response.data;
                     }).catch(function (err) {
                         console.log(err);
                     });
 
                 }
-                
+
+                function getRunQualityByConfiguration() {
+                    if ($scope.applicationName !== '') {
+                        $http.get('/api/getRunQualityAndRuntimeByConfiguration' + '?owner=' + $scope.user.username + "&app_name=" + $scope.applicationName).then(function (response) {
+                            $scope.configJobQualityData = response.data.Configuration;
+                            drawRunQualityChart(response.data.Quality);
+                            drawRunTimeChart(response.data.Runtime);
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                    }
+                }
+
+
+                function drawRunTimeChart(data) {
+                    var categories = [];
+                    for (var i = 1; i <= data.length; i++)
+                        categories.push("C" + i);
+                    var chart = $("#application-run-quality-runtime").highcharts();
+                    if (typeof chart !== 'undefined') {
+                        chart.xAxis[0].setCategories(categories);
+                        chart.get("Runtime").setData(data);
+                        return;
+                    }
+                    Highcharts.chart('application-run-quality-runtime', {
+                        chart: {
+                            type: 'column'
+                        },
+                        credits: {
+                            enabled: false
+                        },
+                        title: {
+                            text: ''
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        xAxis: {
+                            categories: categories,
+                            min: 0,
+                            max: 4,
+                            scrollbar: {
+                                enabled: true
+                            }
+                        },
+                        yAxis: {
+                            min: 0,
+                            title: {
+                                text: 'Runtime (Minutes)'
+                            }
+                        },
+                        tooltip: {
+                            pointFormat: '<b>{point.y} minutes</b><br/>',
+                            shared: true
+                        },
+                        plotOptions: {
+                            series: {}
+                        },
+                        series: [{
+                            id: 'Runtime',
+                            color: "#8235a6",
+                            data: data
+                        }]
+                    });
+                }
+
+                function drawRunQualityChart(data) {
+                    var categories = [];
+                    for (var i = 1; i <= data.Failed.length; i++)
+                        categories.push("C" + i);
+                    var chart = $("#application-run-quality-numberOfRuns").highcharts();
+                    if (typeof chart !== 'undefined') {
+                        chart.xAxis[0].setCategories(categories);
+                        chart.get("Failed").setData(data.Failed);
+                        chart.get("Critical").setData(data.Critical);
+                        chart.get("Abnormal").setData(data.Abnormal);
+                        chart.get("Healthy").setData(data.Healthy);
+                        chart.get("NoQuality").setData(data.NoQuality);
+                        return;
+                    }
+                    Highcharts.chart('application-run-quality-numberOfRuns', {
+                        chart: {
+                            type: 'column'
+                        },
+                        credits: {
+                            enabled: false
+                        },
+                        title: {
+                            text: ''
+                        },
+                        legend: {
+                            align: 'right',
+                            verticalAlign: 'top',
+                            layout: 'vertical'
+                        },
+                        xAxis: {
+                            categories: categories,
+                            min: 0,
+                            max: 4,
+                            scrollbar: {
+                                enabled: true
+                            }
+                        },
+                        yAxis: {
+                            min: 0,
+                            title: {
+                                text: 'Number of Runs'
+                            }
+                        },
+                        tooltip: {
+                            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
+                            shared: true
+                        },
+                        plotOptions: {
+                            series: {}
+                        },
+                        series: [
+                            {
+                                id: 'Healthy',
+                                name: 'Healthy',
+                                color: "#00a65a",
+                                data: data.Healthy
+                            },
+                            {
+                                id: 'Abnormal',
+                                name: 'Abnormal',
+                                color: "#f39c12",
+                                data: data.Abnormal
+                            },
+                            {
+                                id: 'Critical',
+                                name: 'Critical',
+                                color: "#dd4b39",
+                                data: data.Critical
+                            },
+                            {
+                                id: 'Failed',
+                                name: 'Failed',
+                                color: "#4e2040",
+                                data: data.Failed
+                            }, {
+                                id: 'NoQuality',
+                                name: 'NoQuality',
+                                color: "#afb0ff",
+                                data: data.NoQuality
+                            }]
+                    });
+                }
+
                 function refreshAllData() {
-                    $scope.timeout = $timeout(function(){
+                    $scope.timeout = $timeout(function () {
                         $scope.dtCurrentJobsInstance.reloadData();
-                        $timeout(function(){
+                        $timeout(function () {
                             $scope.dtRecentJobsInstance.reloadData();
-                            $timeout(function(){
+                            $timeout(function () {
                                 getJobsCount();
+                                getRunQualityByConfiguration();
                                 refreshAllData();
 
                             }, 2000);
@@ -181,7 +331,7 @@ angular.module('hpcMonitoringApp')
                 }
 
                 /*Destroy timeout function on scope destroy*/
-                $scope.$on("$destroy",function(){
+                $scope.$on("$destroy", function () {
                     if (angular.isDefined($scope.timeout)) {
                         $timeout.cancel($scope.timeout);
                     }

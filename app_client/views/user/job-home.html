@@ -78,6 +78,73 @@
             </div>
         </div>
     </div>
+    <div class="row" ng-show="applicationName!==''">
+        <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Run Quality: Number of Runs
+                </div>
+                <div class="panel-body" style="height: 250px;" id="application-run-quality-numberOfRuns">
+
+                </div>
+                <div class="panel-body" style="height:240px;overflow-y:scroll;">
+                    <table class="table" style="padding:0;">
+                        <thead>
+                        <tr>
+                            <th>Configuration</th>
+                            <th>Node Request</th>
+                            <th>Job Size Range</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="config in configJobQualityData">
+                            <td> {{config.Name}}</td>
+                            <td> {{ config.NodeRequest }}</td>
+                            <td ng-if="config.MinJobSize">{{config.MinJobSize+" - "+config.MaxJobSize}}</td>
+                            <td ng-if="!config.MinJobSize">Unknown</td>
+
+                        </tr>
+
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Runtime
+                </div>
+                <div class="panel-body" style="height: 250px;" id="application-run-quality-runtime">
+
+                </div>
+                <div class="panel-body" style="height:240px;overflow-y:scroll;">
+                    <table class="table" style="padding:0;">
+                        <thead>
+                        <tr>
+                            <th>Configuration</th>
+                            <th>Node Request</th>
+                            <th>Job Size Range</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="config in configJobQualityData">
+                            <td> {{config.Name}}</td>
+                            <td> {{ config.NodeRequest }}</td>
+                            <td ng-if="config.MinJobSize">{{config.MinJobSize+" - "+config.MaxJobSize}}</td>
+                            <td ng-if="!config.MinJobSize">Unknown</td>
+
+                        </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <!--Ok Modal For showing Messages and Warnings -->
     <div class="modal fade" id="ok-modal" data-backdrop="static" data-keyboard="false" tabindex="-1"

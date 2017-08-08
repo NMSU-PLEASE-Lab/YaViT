@@ -18,7 +18,7 @@ var _ = require('underscore');
  */
 module.exports.getMetricsSchema = function (req, res) {
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, function (err, db) {
+    MongoClient.connect(db.dbURI, {},function (err, db) {
         db.collection('schema')
             .find({
                 'type': 'metrics'
@@ -65,7 +65,7 @@ module.exports.getMetricsData = function (req, res) {
 
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, function (err, db) {
+    MongoClient.connect(db.dbURI,{}, function (err, db) {
         if (err)
             return res.status(400).json({
                 "message": err
@@ -135,122 +135,96 @@ module.exports.getMetricsData = function (req, res) {
         }
     });
 };
-
-
-
-
-
 /**
- * Get metrics data according to request filters
+ * Fetch job metric schema from 'dynamic_schema' collection
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getMetricsData2 = function (req, res) {
+module.exports.getJobMetricsSchema = function (req, res) {
+    /* Mongoclient was used because dynamic collection name throwed error in moongoose */
+    MongoClient.connect(db.dbURI, {},function (err, db) {
+        db.collection('dynamic_schema')
+            .find({
+                '$and':[{'Jobid': parseInt(req.query.jobId)},{'processedMax':{'$exists':true}}]
+            }).toArray(function (err, metrics) {
+            if (!err) {
+                return res.status(200).json(metrics);
+            }
+            else
+                return res.status(400).json({
+                    "message": err
+                });
+        });
+    });
+
+};
+
+/**
+ * Get job metrics data according to request filters
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.getJobMetricsData = function (req, res) {
     var requestObj = JSON.parse(req.query.filters);
-    if (requestObj.dateTo == "")
+    if (requestObj.dateTo === "")
         requestObj.dateTo = moment().valueOf();
 
+
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, function (err, db) {
+    MongoClient.connect(db.dbURI,{}, function(err, db) {
         if (err)
             return res.status(400).json({
                 "message": err
             });
 
         var filterObj = {};
-        var cursorResponse = new cursor.cursorResponse();
 
-        var requestCursor = requestObj.cursor;
         filterObj["_id"] = 0;
         filterObj["Timestamp"] = 1;
         filterObj[requestObj.metricValue] = 1;
         var fromTime = 0;
         var toTime = 0;
+        fromTime = requestObj.dateFrom;
+        toTime = requestObj.dateTo;
+
         var sortOrder = 1;
-        if (typeof requestCursor === "undefined") {
-            fromTime = requestObj.dateFrom;
-            toTime = requestObj.dateTo;
+        var timeDiff = toTime - fromTime;
+        var metricCollection;
+        var rawData = true;
+        //if greater than 12 hours display hourly average
+        if (timeDiff > 43200000) {
+            metricCollection = db.collection(requestObj.type + ".hourly");
         }
-        else if (requestCursor > 0) {
-            fromTime = requestCursor;
-            toTime = requestObj.dateTo;
+        //greater than 10 minutes display minutely average
+        else if (timeDiff > 60000000) {
+            metricCollection = db.collection(requestObj.type + ".minutely");
         }
+        //display non average data
         else {
-            fromTime = requestObj.dateFrom;
-            toTime = -requestCursor;
-            sortOrder = -1;
+            metricCollection = db.collection(requestObj.type);
         }
 
-
-        var metricCollection = db.collection(requestObj.type);
 
         try {
             metricCollection.find({
+                    "Jobid": parseInt(requestObj.jobId),
                     "NodeId": parseInt(requestObj.nodeId),
+                    "ProcessId": parseInt(requestObj.processId),
                     "Timestamp": {
                         $gte: fromTime,
                         $lte: toTime
                     }
                 },
-                filterObj).sort({Timestamp: sortOrder}).limit(requestObj.count).toArray(function (err, data) {
+                filterObj).sort({Timestamp: sortOrder}).toArray(function (err, data) {
                 if (!err) {
                     var resp = {};
-
-                    if (data.length == 0) {
-                        resp.cursor = cursorResponse;
-                        resp.data = [];
-                        return res.status(200).json(resp);
-                    }
-
                     if (sortOrder == -1)
                         data.reverse();
 
-                    metricCollection.find({
-                        "NodeId": parseInt(requestObj.nodeId),
-                        "Timestamp": {
-                            $gte: requestObj.dateFrom,
-                            $lte: requestObj.dateTo
-                        }
-                    }, {"_id": 0, "Timestamp": 1}).sort({Timestamp: 1}).limit(1).toArray(function (err, firstData) {
-                        if (err) {
-                            db.close();
-                            return res.status(400).json({
-                                "message": err
-                            });
-                        }
-                        metricCollection.find({
-                            "NodeId": parseInt(requestObj.nodeId),
-                            "Timestamp": {
-                                $gte: requestObj.dateFrom,
-                                $lte: requestObj.dateTo
-                            }
-                        }, {"_id": 0, "Timestamp": 1}).sort({Timestamp: -1}).limit(1).toArray(function (err, lastData) {
-                            db.close();
-                            if (err) {
-                                return res.status(400).json({
-                                    "message": err
-                                });
-                            }
-                            cursorResponse.prev_cursor = data[0].Timestamp - 1;
-                            cursorResponse.next_cursor = data[data.length - 1].Timestamp + 1;
-                            cursorResponse.first_cursor = firstData[0].Timestamp;
-                            cursorResponse.last_cursor = lastData[0].Timestamp;
-
-                            if (cursorResponse.prev_cursor < requestObj.dateFrom || cursorResponse.prev_cursor == cursorResponse.first_cursor - 1)
-                                cursorResponse.prev_cursor = 0;
-
-                            if (cursorResponse.next_cursor > requestObj.dateTo || cursorResponse.next_cursor == cursorResponse.last_cursor + 1)
-                                cursorResponse.next_cursor = 0;
-
-                            resp.cursor = cursorResponse;
-                            resp.data = data.map(function (item) {
-                                return [item.Timestamp, item[requestObj.metricValue]];
-                            });
-                            return res.status(200).json(resp);
-                        });
-
+                    resp.data = data.map(function (item) {
+                        return [item.Timestamp, item[requestObj.metricValue]];
                     });
-
+                    return res.status(200).json(resp);
                 }
                 else {
                     db.close();
@@ -267,3 +241,56 @@ module.exports.getMetricsData2 = function (req, res) {
         }
     });
 };
+/**
+ * Get processIds for a job with spapi
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.getProcessIds = function (req, res) {
+
+    /* Mongoclient was used because dynamic collection name throwed error in moongoose */
+    MongoClient.connect(db.dbURI,{}, function(err, db) {
+        if (err)
+            return res.status(400).json({
+                "message": err
+            });
+
+        var metricCollection =  db.collection(req.query.type + ".hourly");
+        try {
+            metricCollection.aggregate([
+                {
+                    '$match':{'Jobid':parseInt(req.query.jobId)}
+                },
+                {
+                    '$group':{
+                        '_id':{"NodeId":"$NodeId"},
+                        'ProcessIds':{"$push":"$ProcessId"}
+                    }
+                },
+                {'$project':{
+                    '_id':'$_id.NodeId',
+                    'ProcessIds':'$ProcessIds'
+                }}
+
+            ],function (err, data) {
+                if (!err) {
+                    return res.status(200).json(data);
+                }
+                else {
+                    db.close();
+                    return res.status(400).json({
+                        "message": err
+                    });
+                }
+            });
+        }
+        catch (err) {
+            return res.status(400).json({
+                "message": err
+            });
+        }
+    });
+};
+
+
+

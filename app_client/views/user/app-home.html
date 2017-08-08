@@ -29,17 +29,21 @@
 
     </div>
     <div class="row">
-
         <div class="col-lg-6">
             <div class="panel panel-green">
                 <div class="panel-heading">
-                    Average Success Rate
+                    Active Applications
                 </div>
-                <div class="panel-body" style="height: 320px;" id="avg-success-rate-chart">
-
+                <div class="panel-body active-panel" style="height: 320px;overflow-y:auto">
+                    <div class="list-group">
+                        <a ng-repeat="app in activeApplications" ui-sref="user.jobhome({app_name:app})"
+                           class="list-group-item">{{app}}</a>
+                        <a ng-show="activeApplicationCount==0" class="list-group-item">No active applications</a>
+                    </div>
                 </div>
             </div>
         </div>
+
         <div class="col-lg-6">
             <div class="panel panel-primary">
                 <div class="panel-heading">
@@ -55,21 +59,31 @@
     <div class="row">
 
 
-
     </div>
     <div class="row margin-top10">
         <div class="col-lg-6">
-            <div class="panel panel-green">
-                <div class="panel-heading">
-                    Active Applications
-                </div>
-                <div class="panel-body active-panel" style="height: 320px;overflow-y:auto">
-                    <div class="list-group">
-                        <a ng-repeat="app in activeApplications" ui-sref="user.jobhome({app_name:app})" class="list-group-item">{{app}}</a>
-                        <a ng-show="activeApplicationCount==0"  class="list-group-item">No active applications</a>
+            <div class="col-lg-12 padding-0">
+                <div class="panel panel-green">
+                    <div class="panel-heading">
+                        Run Quality
+                    </div>
+                    <div class="panel-body" style="height: 320px;" id="run-quality-chart">
+
                     </div>
                 </div>
             </div>
+            <div class="col-lg-12 padding-0">
+                <div class="panel panel-green">
+                    <div class="panel-heading">
+                        Average Success Rate
+                    </div>
+                    <div class="panel-body" style="height: 320px;" id="avg-success-rate-chart">
+
+                    </div>
+                </div>
+            </div>
+
+
         </div>
         <div class="col-lg-6">
             <div class="panel panel-primary">

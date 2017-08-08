@@ -1,6 +1,6 @@
 /*
-This file contains all routes for node.js for this application
-*/
+ This file contains all routes for node.js for this application
+ */
 
 /*Modules*/
 var express = require('express');
@@ -43,6 +43,13 @@ module.exports = function (app) {
 
     app.get('/api/getMetricsData', ctrlMetrics.getMetricsData);
 
+    app.get('/api/getJobMetricsSchema', ctrlMetrics.getJobMetricsSchema);
+
+    app.get('/api/getJobMetricsData', ctrlMetrics.getJobMetricsData);
+
+    app.get('/api/getProcessIds', ctrlMetrics.getProcessIds);
+
+
     app.get('/api/getJobsCount', ctrlJob.jobsCount);
 
     app.get('/api/allNodes', ctrlNode.allNodes);
@@ -53,9 +60,11 @@ module.exports = function (app) {
 
     app.get('/api/getJobById', ctrlJob.getJobById);
 
-    app.get('/api/getActiveJobs',ctrlJob.getActiveJobs);
+    app.get('/api/getActiveJobs', ctrlJob.getActiveJobs);
 
-    app.get('/api/getRecentJobs',ctrlJob.getRecentJobs);
+    app.get('/api/getRecentJobs', ctrlJob.getRecentJobs);
+
+    app.get('/api/getRunQualityAndRuntimeByConfiguration', ctrlJob.runQualityAndRuntimeByConfiguration);
 
     app.get('/api/getEventsMetadata', ctrlEvent.getEventsMetaData);
 
@@ -70,6 +79,10 @@ module.exports = function (app) {
     app.get('/api/getAverageEfficiencyOfApplications', ctrlApp.averageSuccessRateOfApplications);
 
     app.get('/api/getAverageRunTimeOfApplications', ctrlApp.averageRuntimeOfApplications);
+
+    app.get('/api/getRunQualityOfApplications', ctrlApp.runQualityOfApplications);
+
+
 
 
 };

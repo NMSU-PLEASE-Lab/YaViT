@@ -185,10 +185,10 @@ module.exports.getJobs = function (req, res) {
                         filterParams['$or'].push(obj);
                     }
 
-                else
-                    regex = new RegExp(req.body.search.value.trim(), "i");
-                    obj[entry] = regex;
-                    filterParams['$or'].push(obj);
+                    else
+                        regex = new RegExp(req.body.search.value.trim(), "i");
+                obj[entry] = regex;
+                filterParams['$or'].push(obj);
             });
         }
     }
@@ -207,7 +207,10 @@ module.exports.getJobs = function (req, res) {
             "mem_bytes": 1,
             "mem_used": 1,
             "exit_status": 1,
-            "metrices":1
+            "metrices": 1,
+            "node_req":1,
+            "job_size":1,
+            "job_quality":1
         }).sort(sortParams).limit(parseInt(req.body.length)).skip(parseInt(req.body.start)).lean().exec(function (err, jobs) {
         if (err)
             return res.status(400).json({
@@ -235,7 +238,7 @@ module.exports.getJobs = function (req, res) {
                     }).length;
                 })();
                 jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
-                if(typeof jobs[i].metrices=='undefined')
+                if (typeof jobs[i].metrices == 'undefined')
                     jobs[i].metrices = "";
             }
             Job.count(filterParams, function (err, count) {
@@ -283,6 +286,14 @@ module.exports.getJobById = function (req, res) {
                 });
             ctrlNode.getNodesByIds(nodes, function (nodesList) {
                 job['nodes'] = nodesList;
+                if(typeof job['end_time']!=='undefined' && job['end_time']!==0)
+                    job['duration'] = moment.duration(moment.unix(job['end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
+                else
+                    job['duration'] = "";
+                if(typeof job['job_quality']==='undefined')
+                    job['job_quality'] = 5;
+                if(typeof job['predicted_duration']==='undefined')
+                    job['predicted_duration'] = "Unknown";
                 return res.status(200).json(job);
 
             });
@@ -392,6 +403,82 @@ module.exports.getJobsByAppNameAndUser = function (appnames, user, callback) {
         .lean().exec(function (err, jobs) {
         return callback(jobs);
 
+    });
+
+};
+
+/**
+ * Get configurations and job quality  for single application
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
+    var filterParams = {};
+    filterParams['$and'] = [{owner: req.query.owner}, {ApplicationName: req.query.app_name},
+        {end_time: {$exists: true}}, {end_time: {$ne: ""}}];
+
+    Job.aggregate([
+        {$match: filterParams},
+        {
+            $project: {
+                job_size: 1,
+                job_quality: 1,
+                node_req: 1,
+                RunTime: {$cond:[{$eq:["$exit_status","0"]},{$divide: [{$subtract: ["$end_time", "$start_time"]}, 60]},null]}
+            }
+        },
+        {
+            $group: {
+                _id: "$node_req",
+                Runtime: {$avg: "$RunTime"},
+                MinJobSize: {$min: "$job_size"},
+                MaxJobSize: {$max: "$job_size"},
+                Healthy: {$sum: {$cond: [{$eq: ["$job_quality", 1]}, 1, 0]}},
+                Abnormal: {$sum: {$cond: [{$eq: ["$job_quality", 2]}, 1, 0]}},
+                Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
+                Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
+                NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
+
+            }
+        },
+        {$sort: {_id: 1}}
+    ]).exec(function (err, data) {
+        var resp = {};
+        resp['Configuration'] = [];
+        resp['Quality'] = {};
+        resp['Runtime'] = [];
+
+        resp['Quality']['Healthy'] = [];
+        resp['Quality']['Abnormal'] = [];
+        resp['Quality']['Critical'] = [];
+        resp['Quality']['Failed'] = [];
+        resp['Quality']['NoQuality'] = [];
+
+        resp['Configuration']['Names'] = [];
+        resp['Configuration']['MinJobSize'] = [];
+        resp['Configuration']['MaxJobSize'] = [];
+        resp['Configuration']['NodeRequest'] = [];
+        var conf = 0;
+        data.forEach(function (item) {
+            conf++;
+            resp['Quality']['Healthy'].push(item.Healthy);
+            resp['Quality']['Abnormal'].push(item.Abnormal);
+            resp['Quality']['Critical'].push(item.Critical);
+            resp['Quality']['Failed'].push(item.Failed);
+            resp['Quality']['NoQuality'].push(item.NoQuality);
+
+            resp['Runtime'].push(Math.round(item.Runtime * 100) / 100);
+
+            var confObject = {};
+            confObject.Name = "C" + conf;
+            confObject.MinJobSize = item.MinJobSize;
+            confObject.MaxJobSize = item.MaxJobSize;
+            confObject.NodeRequest = item._id;
+
+            resp['Configuration'].push(confObject);
+
+        });
+        return res.status(200).json(resp);
     });
 
 };
@@ -515,3 +602,35 @@ module.exports.averageNumberOfNodesByApplication = function (owner, callback) {
     });
 
 };
+
+/**
+ * Get run quality  for each application
+ * @param owner - username
+ * @param callback - callback function
+ */
+module.exports.runQualityByApplication = function (owner, callback) {
+    var filterParams = {};
+    if (typeof owner !== 'undefined')
+        filterParams.owner = owner;
+    // filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}];
+    Job.aggregate([
+        {$match: filterParams},
+        {
+            $group: {
+                _id: "$ApplicationName",
+                Healthy: {$sum: {$cond: [{$eq: ["$job_quality", 1]}, 1, 0]}},
+                Abnormal: {$sum: {$cond: [{$eq: ["$job_quality", 2]}, 1, 0]}},
+                Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
+                Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
+                NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
+
+
+            }
+        },
+        {$sort: {_id: 1}}
+    ]).exec(function (err, apps) {
+        return callback(apps)
+    });
+
+};
+

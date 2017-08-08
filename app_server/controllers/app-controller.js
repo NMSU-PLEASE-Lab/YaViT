@@ -142,6 +142,35 @@ module.exports.averageRuntimeOfApplications = function (req, res) {
         });
         return res.status(200).json(resp);
 
+
+    });
+
+};
+
+/**
+ * Get Job Quality by application
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.runQualityOfApplications = function (req, res) {
+    ctrlJob.runQualityByApplication(req.query.username, function (apps) {
+        var resp = {};
+        resp['Applications'] = [];
+        resp['Healthy'] = [];
+        resp['Abnormal'] = [];
+        resp['Critical'] = [];
+        resp['Failed'] = [];
+        resp['NoQuality'] = [];
+        apps.forEach(function (item) {
+            resp['Applications'].push(item._id);
+            resp['Healthy'].push(item.Healthy);
+            resp['Abnormal'].push(item.Abnormal);
+            resp['Critical'].push(item.Critical);
+            resp['Failed'].push(item.Failed);
+            resp['NoQuality'].push(item.NoQuality);
+        });
+        return res.status(200).json(resp);
+
     });
 
 };

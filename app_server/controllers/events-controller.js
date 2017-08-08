@@ -13,6 +13,7 @@ var _ = require('underscore');
  * @param res - HTTP response
  */
 module.exports.getEventsMetaData = function (req, res) {
+
     appevent.aggregate([
         {$match: {job_id: parseInt(req.query.jobId)}},
         {

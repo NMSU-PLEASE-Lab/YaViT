@@ -6,7 +6,7 @@
     </div>
 
     <div class="row margin-bottom20">
-        <div class="col-lg-8">
+        <div class="col-lg-7">
             <table class="table table-bordered table-striped">
                 <tr>
                     <td><b>Application Name</b></td>
@@ -38,6 +38,55 @@
             </table>
 
         </div>
+        <div class="col-lg-3">
+            <table class="table">
+
+                <tr>
+                    <td><b>Predicted Runtime</b></td>
+                    <td>{{currentJobDetail.predicted_duration}}</td>
+
+                </tr>
+                <tr>
+                    <td><b>Actual Runtime</b></td>
+                    <td>{{currentJobDetail.duration}}</td>
+                </tr>
+                <tr>
+                    <td><b>Job Quality</b></td>
+                    <td>
+                        <span ng-show="currentJobDetail.job_quality==1" class="label label-success">Healthy</span>
+                        <span ng-show="currentJobDetail.job_quality==2" class="label label-warning">Abnormal</span>
+                        <span ng-show="currentJobDetail.job_quality==3" class="label label-danger">Critical</span>
+                        <span ng-show="currentJobDetail.job_quality==4" class="label label-primary" style="background-color: #4e2040 !important">Failed</span>
+                        <span ng-show="currentJobDetail.job_quality==5" class="label label-primary">NoQuality</span>
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </div>
+        <div class="col-lg-2">
+            <div style="display: table;height: 100px;">
+                <table style="display: table-cell;vertical-align: middle">
+                    <tr>
+                        <th colspan="2"><small>% Difference of Predicted and Actual Runtime</small></th>
+                    </tr>
+                    <tr>
+                        <td><small>10% range : </small> &nbsp;</td>
+                        <td><span class="label label-success">Healthy</span></td>
+                    </tr>
+                    <tr>
+                        <td><small>10% - 20% : </small> &nbsp;</td>
+                        <td><span class="label label-warning">Abnormal</span></td>
+                    </tr>
+                    <tr>
+                        <td><small>>20% : </small> &nbsp;</td>
+                        <td><span class="label label-danger">Critical</span></td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
     </div>
 
     <div id="event-alert" class="row margin-top20" ng-show="!showEventChart">
@@ -61,7 +110,6 @@
                     <div id="event-dashboard-dual" style="">
                         <div id="event-control-dual" style="width: 95%;"></div>
                         <div id="event-chart-dual" style="width: 95%;"></div>
-
                     </div>
                     <div id="junk_div" style="display: none;"></div>
                 </div>
@@ -130,28 +178,58 @@
                         <b>{{node.name}}</b>: {{metric.name | uppercase}}
                     </div>
                     <div class="panel-body">
+
                         <div class="col-lg-3">
-                            <div isteven-multi-select
-                                 input-model="selectedMetricsValueOptions[node.name][metric.name]"
-                                 output-model="selectedMetricsValueOptionsOutput[node.name][metric.name]"
-                                 button-label="0"
-                                 item-label="name"
-                                 helper-elements="filter none"
-                                 helper-text="Selection limit is 6"
-                                 tick-property="ticked"
-                                 max-height="150px"
-                                 on-item-click="metricsValueOptionsChanged(metric.name,node,data)">
+                            <div class="form-group row">
+
+                                <label class="col-lg-3 text-right margin-top5">Type:</label>
+                                <div class="col-lg-9">
+                                    <div isteven-multi-select
+                                         input-model="selectedMetricsValueOptions[node.name][metric.name]"
+                                         output-model="selectedMetricsValueOptionsOutput[node.name][metric.name]"
+                                         button-label="0"
+                                         item-label="name"
+                                         helper-elements="filter none"
+                                         helper-text="Selection limit is 6"
+                                         tick-property="ticked"
+                                         max-height="150px"
+                                         on-item-click="metricsValueOptionsChanged(metric.name,node,data)">
+                                    </div>
+                                </div>
                             </div>
 
                         </div>
+
+                        <div class="col-lg-3" ng-if="metric.name==='spapi'">
+                            <div class="form-group row">
+
+                                <label class="col-lg-3 text-right margin-top5">Process:</label>
+                                <div class="col-lg-9">
+                                    <div isteven-multi-select
+                                         input-model="selectedProcessIds[node.name]"
+                                         output-model="selectedProcessIdsOutput[node.name]"
+                                         button-label="0"
+                                         item-label="name"
+                                         helper-elements="filter none"
+                                         helper-text="Selection limit is 6"
+                                         tick-property="ticked"
+                                         selection-mode="single"
+                                         max-height="150px"
+                                         on-item-click="metricsValueOptionsChanged(metric.name,node,data)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-lg-3">
                             <div class="form-group row">
                                 <label for="{{metric.name}}-node-{{node.value}}-chartype"
                                        class="col-lg-4 text-right">Chart Type:</label>
                                 <div class="col-lg-8">
-                                    <select class="form-control" id="{{metric.name}}-node-{{node.value}}-chartype" ng-model="selectedChartType[node.value][metric.name]"
+                                    <select class="form-control" id="{{metric.name}}-node-{{node.value}}-chartype"
+                                            ng-model="selectedChartType[node.value][metric.name]"
                                             ng-options="x for x in ['Line','Scatter']"
-                                    ng-change = "chartTypeChange(metric.name,node)">
+                                            ng-change="chartTypeChange(metric.name,node)">
 
                                     </select>
                                 </div>
@@ -161,41 +239,41 @@
 
                         <!--<div class="col-lg-6 pull-right text-right">-->
 
-                            <!--&lt;!&ndash;<div class="pull-right"  ng-show="selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0">&ndash;&gt;-->
-                            <!--<div class="pull-right">-->
+                        <!--&lt;!&ndash;<div class="pull-right"  ng-show="selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0">&ndash;&gt;-->
+                        <!--<div class="pull-right">-->
 
-                                <!--<button class="btn btn-sm btn-default" title="First"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'first',node)"><i-->
-                                        <!--class="fa fa-angle-double-left"></i></button>-->
-                                <!--<button class="btn btn-sm btn-default"-->
-                                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].prev_cursor==0"-->
-                                        <!--title="Previous"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'prev',node)"><i-->
-                                        <!--class="fa fa-angle-left"></i>-->
-                                <!--</button>-->
-                                <!--<button class="btn btn-sm btn-default"-->
-                                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].next_cursor==0"-->
-                                        <!--title="Next"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'next',node)"><i-->
-                                        <!--class="fa fa-angle-right"></i>-->
-                                <!--</button>-->
-                                <!--<button class="btn btn-sm btn-default" title="Last"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'last',node)"><i-->
-                                        <!--class="fa fa-angle-double-right"></i></button>-->
-                            <!--</div>-->
+                        <!--<button class="btn btn-sm btn-default" title="First"-->
+                        <!--ng-click="metricValueChanged(metric.name,'first',node)"><i-->
+                        <!--class="fa fa-angle-double-left"></i></button>-->
+                        <!--<button class="btn btn-sm btn-default"-->
+                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].prev_cursor==0"-->
+                        <!--title="Previous"-->
+                        <!--ng-click="metricValueChanged(metric.name,'prev',node)"><i-->
+                        <!--class="fa fa-angle-left"></i>-->
+                        <!--</button>-->
+                        <!--<button class="btn btn-sm btn-default"-->
+                        <!--ng-disabled="selectedMetricsCursors[node.value][metric.name].next_cursor==0"-->
+                        <!--title="Next"-->
+                        <!--ng-click="metricValueChanged(metric.name,'next',node)"><i-->
+                        <!--class="fa fa-angle-right"></i>-->
+                        <!--</button>-->
+                        <!--<button class="btn btn-sm btn-default" title="Last"-->
+                        <!--ng-click="metricValueChanged(metric.name,'last',node)"><i-->
+                        <!--class="fa fa-angle-double-right"></i></button>-->
+                        <!--</div>-->
 
-                            <!--<div class="form-group pull-right margin-right10">-->
+                        <!--<div class="form-group pull-right margin-right10">-->
 
-                                <!--<button ng-show="!(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
-                                        <!--class="btn btn-sm btn-primary" title="all"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
-                                <!--</button>-->
+                        <!--<button ng-show="!(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
+                        <!--class="btn btn-sm btn-primary" title="all"-->
+                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
+                        <!--</button>-->
 
-                                <!--<button ng-show="(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
-                                        <!--class="btn btn-sm btn-default" title="all"-->
-                                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
-                                <!--</button>-->
-                            <!--</div>-->
+                        <!--<button ng-show="(selectedMetricsCursors[node.value][metric.name].prev_cursor!=0 || selectedMetricsCursors[node.value][metric.name].next_cursor!=0)"-->
+                        <!--class="btn btn-sm btn-default" title="all"-->
+                        <!--ng-click="metricValueChanged(metric.name,'all',node)"> All-->
+                        <!--</button>-->
+                        <!--</div>-->
 
 
                         <!--</div>-->

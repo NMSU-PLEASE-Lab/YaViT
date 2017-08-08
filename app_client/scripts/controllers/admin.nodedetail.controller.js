@@ -81,7 +81,7 @@ angular.module('hpcMonitoringApp')
                                 $scope.selectedMetricsValueOptions[$scope.myNodeList[i].Name][$scope.metricsSchema[j].name] = [];
                                 $scope.selectedMetricsValueOptionsOutput[$scope.myNodeList[i].Name][$scope.metricsSchema[j].name] = [];
                                 for (var k = 0; k < keys.length; k++)
-                                    if ($scope.metricsSchema[j].non_metric_fields.indexOf(keys[k]) == -1)
+                                    if (!(keys[k] in $scope.metricsSchema[j].non_metric_fields))
                                         $scope.selectedMetricsValueOptions[$scope.myNodeList[i].Name][$scope.metricsSchema[j].name].push({
                                             name: keys[k],
                                             ticked: false

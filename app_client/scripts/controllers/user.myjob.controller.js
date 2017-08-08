@@ -176,6 +176,26 @@ angular.module('hpcMonitoringApp')
                             return '';
                     }).withTitle('Start Date'),
                     DTColumnBuilder.newColumn('duration').withTitle('Duration'),
+                    DTColumnBuilder.newColumn('RunQuality').withTitle('Run Quality').renderWith(function (data, type, full) {
+
+                        if (data === 1)
+                            return '<span class="label label-success">Healthy</span>';
+                        else if (data === 2)
+                            return '<span class="label label-warning">Abnormal</span>';
+                        else if (data === 3)
+                            return '<span class="label label-danger">Critical</span>';
+                        else if (data === 4)
+                            return '<span class="label label-primary" style="background-color: #4e2040 !important">Failed</span>';
+                        else
+                            return '<span class="label label-primary">NoQuality</span>';
+
+                    }),
+                    DTColumnBuilder.newColumn('node_req').withTitle('Node Request'),
+                    DTColumnBuilder.newColumn('job_size').withTitle('Job Size').renderWith(function (data, type, full) {
+                        if(!data)
+                            return "No Data";
+                    }),
+
                     DTColumnBuilder.newColumn('numberOfNodes').withTitle('Nodes Used'),
                     DTColumnBuilder.newColumn('mem_used').withTitle('Memory Used').renderWith(function (data, type, full) {
                         if (typeof data == 'undefined' || data == '')
@@ -232,7 +252,7 @@ angular.module('hpcMonitoringApp')
                             "orderable": false
                         },
                             {
-                                "targets": 6,
+                                "targets": 8,
                                 "orderable": false
                             }])
                         .withOption('ajax', {
