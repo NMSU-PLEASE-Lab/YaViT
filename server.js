@@ -41,7 +41,7 @@ require('./app_server/models/db');
 require('./app_server/config/passport');
 
 //Bring in the routes for the API
-require('./app_server/routes/api')(app);
+require('./app_server/routes/api')(app,io);
 
 
 //start app
@@ -53,14 +53,7 @@ server.listen(app.listen(SERVER_PORT, function (err) {
     }
 }));
 
-//on socket.io connectin
-io.sockets.on('connection', function (socket) {
-    setInterval(function () {
-        var now = new Date();
-        socket.emit('server:time', now);
-    }, 2000)
 
-});
 
 
 exports = module.exports = app; 	// expose app

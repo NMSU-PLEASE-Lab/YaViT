@@ -74,7 +74,7 @@ angular.module('hpcMonitoringApp')
                         }).then(function (response) {
                             $scope.activeJobs = response.data;
                             var counts = _.countBy(response.data, function (item) {
-                                return typeof item.start_time !== 'undefined' && item.start_time != '' ? 'Running' : 'Queued';
+                                return typeof item.start_time !== 'undefined' && item.start_time !== '' ? 'Running' : 'Queued';
                             });
                             $scope.runningJobsCount = counts.Running || 0;
                             $scope.queuedJobsCount = counts.Queued || 0;
@@ -117,10 +117,23 @@ angular.module('hpcMonitoringApp')
                     }).withTitle('Job Number'),
                     DTColumnBuilder.newColumn('name').withTitle('Name'),
                     DTColumnBuilder.newColumn(null).withTitle('Status').renderWith(function (data, type, full) {
-                        if (typeof full.start_time === 'undefined' || full.start_time == '')
+                        if (typeof full.start_time === 'undefined' || full.start_time === '' || full.start_time === 0)
                             return "<span class='label label-warning'>Queued</span>";
-                        else
-                            return "<span class='label label-primary'>Running</span>";
+                        else {
+                            if (full.percentCompleted === -1)
+                                return "<span class='label label-primary'>Running</span>";
+                            else {
+                                full.percentCompleted = full.percentCompleted <1? full.percentCompleted : parseInt(full.percentCompleted);
+                                full.percentCompleted = full.percentCompleted >= 100 ? 99 : full.percentCompleted;
+                                return '<div class="progress" style="border: 1px solid #969696;">' +
+                                    '<div class="progress-bar" role="progressbar" style="width:'+full.percentCompleted+'%;"></div>' +
+                                    '<div style="position: absolute;right:40px;">' +
+                                    '<small>'+full.percentCompleted+'%</small>' +
+                                    '</div>' +
+                                    '</div>';
+
+                            }
+                        }
                     })
                 ];
 

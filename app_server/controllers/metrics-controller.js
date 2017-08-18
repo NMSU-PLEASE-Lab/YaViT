@@ -18,7 +18,7 @@ var _ = require('underscore');
  */
 module.exports.getMetricsSchema = function (req, res) {
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {},function (err, db) {
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
         db.collection('schema')
             .find({
                 'type': 'metrics'
@@ -33,7 +33,7 @@ module.exports.getMetricsSchema = function (req, res) {
                         return res.status(400).json({
                             "message": err
                         });
-                    (function (i,metricname) {
+                    (function (i, metricname) {
                         db.collection(metricname).find({}, {"Timestamp": 1}).sort({"Timestamp": 1}).limit(1).toArray(function (err, data) {
                             if (!err)
                                 metrics[i]['MinTime'] = data[0].Timestamp;
@@ -52,7 +52,6 @@ module.exports.getMetricsSchema = function (req, res) {
 };
 
 
-
 /**
  * Get metrics data according to request filters
  * @param req - HTTP request
@@ -65,7 +64,7 @@ module.exports.getMetricsData = function (req, res) {
 
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI,{}, function (err, db) {
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
         if (err)
             return res.status(400).json({
                 "message": err
@@ -142,10 +141,10 @@ module.exports.getMetricsData = function (req, res) {
  */
 module.exports.getJobMetricsSchema = function (req, res) {
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {},function (err, db) {
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
         db.collection('dynamic_schema')
             .find({
-                '$and':[{'Jobid': parseInt(req.query.jobId)},{'processedMax':{'$exists':true}}]
+                '$and': [{'Jobid': parseInt(req.query.jobId)}]
             }).toArray(function (err, metrics) {
             if (!err) {
                 return res.status(200).json(metrics);
@@ -171,7 +170,7 @@ module.exports.getJobMetricsData = function (req, res) {
 
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI,{}, function(err, db) {
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
         if (err)
             return res.status(400).json({
                 "message": err
@@ -204,17 +203,18 @@ module.exports.getJobMetricsData = function (req, res) {
             metricCollection = db.collection(requestObj.type);
         }
 
+        var filters = {};
+        filters["Jobid"] = parseInt(requestObj.jobId);
+        filters["NodeId"] = parseInt(requestObj.nodeId);
+        if(typeof requestObj.processId!=='undefined')
+            filters["ProcessId"] = parseInt(requestObj.processId);
+        filters["Timestamp"] = {
+            $gte: fromTime,
+            $lte: toTime
+        };
 
         try {
-            metricCollection.find({
-                    "Jobid": parseInt(requestObj.jobId),
-                    "NodeId": parseInt(requestObj.nodeId),
-                    "ProcessId": parseInt(requestObj.processId),
-                    "Timestamp": {
-                        $gte: fromTime,
-                        $lte: toTime
-                    }
-                },
+            metricCollection.find(filters,
                 filterObj).sort({Timestamp: sortOrder}).toArray(function (err, data) {
                 if (!err) {
                     var resp = {};
@@ -249,30 +249,32 @@ module.exports.getJobMetricsData = function (req, res) {
 module.exports.getProcessIds = function (req, res) {
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI,{}, function(err, db) {
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
         if (err)
             return res.status(400).json({
                 "message": err
             });
 
-        var metricCollection =  db.collection(req.query.type + ".hourly");
+        var metricCollection = db.collection(req.query.type + ".hourly");
         try {
             metricCollection.aggregate([
                 {
-                    '$match':{'Jobid':parseInt(req.query.jobId)}
+                    '$match': {'Jobid': parseInt(req.query.jobId)}
                 },
                 {
-                    '$group':{
-                        '_id':{"NodeId":"$NodeId"},
-                        'ProcessIds':{"$push":"$ProcessId"}
+                    '$group': {
+                        '_id': {"NodeId": "$NodeId"},
+                        'ProcessIds': {"$push": "$ProcessId"}
                     }
                 },
-                {'$project':{
-                    '_id':'$_id.NodeId',
-                    'ProcessIds':'$ProcessIds'
-                }}
+                {
+                    '$project': {
+                        '_id': '$_id.NodeId',
+                        'ProcessIds': '$ProcessIds'
+                    }
+                }
 
-            ],function (err, data) {
+            ], function (err, data) {
                 if (!err) {
                     return res.status(200).json(data);
                 }
@@ -290,6 +292,34 @@ module.exports.getProcessIds = function (req, res) {
             });
         }
     });
+};
+
+
+/**
+ * Get SPAPI overview
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.getSpapiOverview = function (req, res) {
+    var filterParams = {};
+
+    if (typeof req.query.jobId !== 'undefined' && req.query.jobId !== '')
+        filterParams["_id.Jobid"] = parseInt(req.query.jobId);
+
+    MongoClient.connect(db.dbURI, {}, function (err, db) {
+        db.collection('spapi.overview')
+            .find(filterParams, {}).sort({}).limit(parseInt(req.body.length)).skip(parseInt(req.body.start)).toArray(function (err, records) {
+            if (err)
+                return res.status(400).json({
+                    "message": err
+                });
+
+            return res.status(200).json(records);
+
+        });
+
+    });
+
 };
 
 

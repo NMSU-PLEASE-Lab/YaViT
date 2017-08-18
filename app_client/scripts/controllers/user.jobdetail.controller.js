@@ -9,8 +9,8 @@
 angular.module('hpcMonitoringApp')
 
     .controller('userJobDetailCtrl',
-        ['$scope', '$location', 'authentication', '$http', '$stateParams', '$q', '$httpParamSerializer',
-            function ($scope, $location, authentication, $http, $stateParams, $q, $httpParamSerializer) {
+        ['$scope', '$location', 'authentication', '$http', '$stateParams', '$q', '$httpParamSerializer', 'DTOptionsBuilder', 'DTColumnBuilder','$compile',
+            function ($scope, $location, authentication, $http, $stateParams, $q, $httpParamSerializer, DTOptionsBuilder, DTColumnBuilder,$compile) {
 
                 var user = authentication.currentUser();
                 if (user.usertype == 1)
@@ -40,6 +40,13 @@ angular.module('hpcMonitoringApp')
                 $scope.processIds = {};
                 $scope.selectedChartType = [];
 
+                /* Angular Data table vars and methods for Jobs */
+                $scope.dtSpapiOverviewInstance = {};
+
+                $scope.dtSpapiOverviewOptions = DTOptionsBuilder.newOptions()
+                    .withPaginationType('full_numbers')
+                    .withOption('searching',false);
+
                 $scope.currentJobId = 0;
                 if (typeof $stateParams.jobId !== 'undefined' && $stateParams.jobId !== '') {
                     $scope.currentJobId = $stateParams.jobId;
@@ -49,6 +56,7 @@ angular.module('hpcMonitoringApp')
                 $scope.showEventChart = false;
                 $scope.eventsMetadata = [];
                 $scope.eventCursor = [];
+                $scope.spapiOverviewData = [];
 
                 /*Get metrics schema on controller initialization */
                 $http.get('/api/getMetricsSchema').then(function (response) {
@@ -56,6 +64,8 @@ angular.module('hpcMonitoringApp')
                     $http.get('/api/getJobMetricsSchema?jobId=' + $scope.currentJobId).then(function (resp) {
                         $scope.metricsSchema = $scope.metricsSchema.concat(resp.data);
                         $http.get('/api/getProcessIds?type=spapi&jobId=' + $scope.currentJobId).then(function (resp) {
+                            if (resp.data.length > 0)
+                                getSpapiOverview();
                             $scope.processIds = resp.data;
                             $http.get('/api/getEventsMetadata?jobId=' + $scope.currentJobId).then(function (response) {
                                 $scope.eventsMetadata = response.data;
@@ -76,6 +86,30 @@ angular.module('hpcMonitoringApp')
                 });
 
 
+                function getSpapiOverview() {
+                    $scope.spapiHeaders = [];
+                    var spapi = _.find($scope.metricsSchema, function (obj) {
+                        return obj.name === "spapi";
+                    });
+                    for (var prop in spapi['structure']) {
+                        $scope.spapiHeaders.push(prop);
+                    }
+
+                    $http({
+                        method: 'GET',
+                        url: '/api/getSpapiOverview',
+                        params: {
+                            jobId: $scope.currentJobId
+                        }
+                    }).then(function (records) {
+                        $scope.spapiOverviewData = records.data;
+                        })
+                    .catch(function (err) {
+                        console.log(err);
+                    });
+
+                }
+
                 function getJobAndEventData() {
                     $scope.selectedMetricsValueOptions = [];
                     $scope.selectedMetricsValueOptionsOutput = [];
@@ -93,7 +127,6 @@ angular.module('hpcMonitoringApp')
 
                     $http.get('/api/getJobById' + queryParamsUrl).then(function (response) {
                         $scope.currentJobDetail = response.data;
-                        console.log($scope.currentJobDetail);
                         $scope.currentJobDetail.queue_time_formatted = moment.unix($scope.currentJobDetail.queue_time).format("YYYY-MM-DD hh:mm:ss");
                         $scope.currentJobDetail.start_time_formatted = moment.unix($scope.currentJobDetail.start_time).format("YYYY-MM-DD hh:mm:ss");
                         if (typeof $scope.currentJobDetail.end_time === 'undefined') {
@@ -105,15 +138,23 @@ angular.module('hpcMonitoringApp')
                             $scope.currentJobDetail.end_time_formatted = moment.unix($scope.currentJobDetail.end_time).format("YYYY-MM-DD hh:mm:ss");
                         if (typeof $scope.currentJobDetail.metrices === "undefined" || $scope.currentJobDetail.metrices.length === 0)
                             for (var i = 0; i < $scope.metricsSchema.length; i++) {
-                                $scope.metricsSelectorOptions.push({name: $scope.metricsSchema[i].name, ticked: false});
+                                $scope.metricsSelectorOptions.push(
+                                    {
+                                        name: $scope.metricsSchema[i].name,
+                                        type: typeof $scope.metricsSchema[i].Jobid==='undefined'?'sys_metric':'job_metric',
+                                        ticked: false
+                                    });
                             }
                         else
-                            for (var i = 0; i < $scope.currentJobDetail.metrices.length; i++) {
-                                $scope.metricsSelectorOptions.push({
-                                    name: $scope.currentJobDetail.metrices[i],
-                                    ticked: false
-                                });
+                            for (var i = 0; i < $scope.metricsSchema.length; i++) {
+                               if($scope.currentJobDetail.metrices.indexOf($scope.metricsSchema[i].name) >-1)
+                               $scope.metricsSelectorOptions.push({
+                                   name: $scope.metricsSchema[i].name,
+                                   type: typeof $scope.metricsSchema[i].Jobid==='undefined'?'sys_metric':'job_metric',
+                                   ticked: false
+                               });
                             }
+
 
                         $scope.nodesSelectorOptions = [];
                         for (var i = 0; i < $scope.currentJobDetail.nodes.length; i++) {
@@ -130,17 +171,18 @@ angular.module('hpcMonitoringApp')
 
                             $scope.selectedProcessIds[$scope.currentJobDetail.nodes[i].Name] = [];
                             $scope.selectedProcessIdsOutput[$scope.currentJobDetail.nodes[i].Name] = [];
-                            var thisNode = _.find($scope.processIds,function (obj) {
+                            var thisNode = _.find($scope.processIds, function (obj) {
                                 return obj._id === $scope.currentJobDetail.nodes[i]._id;
                             });
-                            for (var l = 0; l < thisNode.ProcessIds.length; l++){
-                                if(thisNode.ProcessIds[l]===0)
-                                    continue;
-                                $scope.selectedProcessIds[$scope.currentJobDetail.nodes[i].Name].push({
-                                    name: thisNode.ProcessIds[l],
-                                    ticked: false
-                                });
-                            }
+                            if (typeof thisNode !== 'undefined')
+                                for (var l = 0; l < thisNode.ProcessIds.length; l++) {
+                                    if (thisNode.ProcessIds[l] === 0)
+                                        continue;
+                                    $scope.selectedProcessIds[$scope.currentJobDetail.nodes[i].Name].push({
+                                        name: thisNode.ProcessIds[l],
+                                        ticked: false
+                                    });
+                                }
 
                             $scope.selectedChartType[$scope.currentJobDetail.nodes[i]._id] = {};
 
@@ -232,7 +274,7 @@ angular.module('hpcMonitoringApp')
                 }
 
                 $scope.metricsOptionsChanged = function (data) {
-                    if (data.ticked == true && $scope.metricsSelectorOptionsOutput.length > 3) {
+                    if (data.ticked === true && $scope.metricsSelectorOptionsOutput.length > 3) {
                         for (var i = 0; i < $scope.metricsSelectorOptions.length; i++) {
                             if ($scope.metricsSelectorOptions[i].name == data.name) {
                                 $scope.metricsSelectorOptions[i].ticked = false;
@@ -241,7 +283,8 @@ angular.module('hpcMonitoringApp')
                         }
 
                     }
-                    if (data.ticked == false) {
+                    if (data.ticked === false) {                        jobId: $scope.currentJobId
+
                         for (var i = 0; i < $scope.currentJobDetail.nodes.length; i++) {
                             try {
                                 $('#' + data.name + '-chart-container-node-' + $scope.$scope.currentJobDetail.nodes[i].Name).highcharts().destroy();
@@ -256,7 +299,7 @@ angular.module('hpcMonitoringApp')
                 };
 
                 $scope.nodesOptionsChanged = function (data) {
-                    if (data.ticked == true && $scope.nodesSelectorOptionsOutput.length > 4) {
+                    if (data.ticked === true && $scope.nodesSelectorOptionsOutput.length > 4) {
                         for (var i = 0; i < $scope.nodesSelectorOptions.length; i++) {
                             if ($scope.nodesSelectorOptions[i].value == data.value) {
                                 $scope.nodesSelectorOptions[i].ticked = false;
@@ -265,7 +308,7 @@ angular.module('hpcMonitoringApp')
                         }
 
                     }
-                    if (data.ticked == false) {
+                    if (data.ticked === false) {
                         for (var i = 0; i < $scope.metricsSchema.length; i++) {
                             try {
                                 $('#' + $scope.metricsSchema[i].name + '-chart-container-node-' + data.name).highcharts().destroy();
@@ -289,9 +332,11 @@ angular.module('hpcMonitoringApp')
                 };
 
                 $scope.metricsValueOptionsChanged = function (metricName, node, data) {
-                    if (data.ticked == true && $scope.selectedMetricsValueOptionsOutput[node.name][metricName].length > 6) {
+                    if (metricName === 'spapi' && $scope.selectedProcessIdsOutput[node.name].length === 0)
+                        return;
+                    if (data.ticked === true && $scope.selectedMetricsValueOptionsOutput[node.name][metricName].length > 6) {
                         for (var i = 0; i < $scope.selectedMetricsValueOptions[node.name][metricName].length; i++) {
-                            if ($scope.selectedMetricsValueOptions[node.name][metricName][i].name == data.name) {
+                            if ($scope.selectedMetricsValueOptions[node.name][metricName][i].name === data.name) {
                                 $scope.selectedMetricsValueOptions[node.name][metricName][i].ticked = false;
                                 return;
                             }
@@ -305,6 +350,16 @@ angular.module('hpcMonitoringApp')
                     GetDataAndDrawChart({"metricName": metricName, "nodeId": node.value});
 
                 };
+                $scope.processOptionsChanged = function (metricName, node) {
+
+                    var chartId = metricName + "-chart-container-node-" + node.value;
+                    if (typeof $("#" + chartId).highcharts() !== 'undefined') {
+                        typeof $("#" + chartId).highcharts().destroy();
+                    }
+                    GetDataAndDrawChart({"metricName": metricName, "nodeId": node.value});
+
+                };
+
 
                 $scope.unixToJsTime = function ($unixTime) {
                     return "Submitted Date: " + moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
@@ -338,51 +393,35 @@ angular.module('hpcMonitoringApp')
                 function GetDataAndDrawChart(singleChartData) {
                     var getObj = {};
                     getObj.dateFrom = $scope.currentJobDetail.start_time * 1000;
-                    getObj.dateTo = $scope.currentJobDetail.end_time != 0 ? $scope.currentJobDetail.end_time * 1000 : moment().valueOf();
+                    getObj.dateTo = $scope.currentJobDetail.end_time !== 0 ? $scope.currentJobDetail.end_time * 1000 : moment().valueOf();
                     var urlCalls = [];
 
 
                     for (var i = 0; i < $scope.nodesSelectorOptionsOutput.length; i++) {
-                        if (typeof singleChartData !== 'undefined' && $scope.nodesSelectorOptionsOutput[i].value != singleChartData.nodeId) continue;
+                        if (typeof singleChartData !== 'undefined' && $scope.nodesSelectorOptionsOutput[i].value !== singleChartData.nodeId) continue;
                         getObj.nodeId = $scope.nodesSelectorOptionsOutput[i].value;
                         for (var j = 0; j < $scope.metricsSelectorOptionsOutput.length; j++) {
-                            if (typeof singleChartData !== 'undefined' && $scope.metricsSelectorOptionsOutput[j].name != singleChartData.metricName) continue;
+                            if (typeof singleChartData !== 'undefined' && $scope.metricsSelectorOptionsOutput[j].name !== singleChartData.metricName) continue;
                             getObj.type = $scope.metricsSelectorOptionsOutput[j].name;
                             var chartContainerId = getObj.type + '-chart-container-node-' + $scope.nodesSelectorOptionsOutput[i].value;
                             var metricValues = _.pluck($scope.selectedMetricsValueOptionsOutput[$scope.nodesSelectorOptionsOutput[i].name][$scope.metricsSelectorOptionsOutput[j].name], 'name');
                             for (var k = 0; k < metricValues.length; k++) {
 
-                                if (typeof ($("#" + chartContainerId).highcharts()) !== 'undefined')
-                                    continue;
                                 getObj.metricValue = metricValues[k];
-                                var url = "";
+                                var  url = $scope.metricsSelectorOptionsOutput[j].name==='job_metric'?'/api/getJobMetricsData':'/api/getMetricsData';
+                                getObj.jobId = $scope.currentJobId;
                                 if (getObj.type === 'spapi') {
-
-                                    getObj.processId = $scope.selectedProcessIdsOutput[$scope.nodesSelectorOptionsOutput[i].name][0].name;
-                                    console.log(getObj.processId);
-                                    getObj.jobId = $scope.currentJobId;
-                                    url = '/api/getJobMetricsData';
+                                    $scope.selectedProcessIdsOutput[$scope.nodesSelectorOptionsOutput[i].name].forEach(function (elem) {
+                                        getObj.processId = elem.name;
+                                        urlCallsPush(getObj, chartContainerId, metricValues, url);
+                                    });
                                 }
-                                else
-                                    url = '/api/getMetricsData';
-
-
-                                urlCalls.push($http({
-                                    method: 'GET',
-                                    url: '/api/getMetricsData',
-                                    params: {
-                                        filters: JSON.stringify(getObj)
-                                    }
-                                }).then((function (getObjJson, chartContainerId, noOfMetricValues) {
-                                        return function (response) {
-                                            var getObj = JSON.parse(getObjJson);
-                                            $scope.selectedMetricsCursors[getObj.nodeId][getObj.type] = response.data.cursor;
-                                            DrawMetricsChart(chartContainerId, response.data.data, getObj.type, getObj.nodeId, getObj.metricValue, metricValues.length, $scope);
-                                        }
-                                    })(JSON.stringify(getObj), chartContainerId)
-                                ).catch(function (err) {
-                                    console.log(err);
-                                }));
+                                else {
+                                    if (typeof ($("#" + chartContainerId).highcharts()) !== 'undefined')
+                                        continue;
+                                    getObj.processId = '';
+                                    urlCallsPush(getObj, chartContainerId, metricValues, url);
+                                }
 
 
                             }
@@ -391,22 +430,45 @@ angular.module('hpcMonitoringApp')
                     $q.all(urlCalls).then(function () {
 
                     });
+                    function urlCallsPush(getObj, chartContainerId, metricValues, url) {
+                        urlCalls.push($http({
+                            method: 'GET',
+                            url: url,
+                            params: {
+                                filters: JSON.stringify(getObj)
+                            }
+                        }).then((function (getObjJson, chartContainerId, metricValues, processId) {
+                                return function (response) {
+                                    var getObj = JSON.parse(getObjJson);
+                                    $scope.selectedMetricsCursors[getObj.nodeId][getObj.type] = response.data.cursor;
+                                    DrawMetricsChart(chartContainerId, response.data.data, getObj.type, getObj.nodeId, getObj.metricValue, metricValues.length, $scope, processId);
+                                }
+                            })(JSON.stringify(getObj), chartContainerId, metricValues, getObj.processId)
+                        ).catch(function (err) {
+                            console.log(err);
+                        }));
+
+                    }
+
                     // }
 
                 }
 
 
-                function DrawMetricsChart(containerId, data, chartType, nodeId, metricValue, noOfMetricValues, $scope) {
+                function DrawMetricsChart(containerId, data, chartType, nodeId, metricValue, noOfMetricValues, $scope, processId) {
                     // Add a null value for the end date
                     data = [].concat(data, [[$scope.currentJobDetail.end_time != 0 ? $scope.currentJobDetail.end_time * 1000 : moment().valueOf(), null, null, null, null]]);
 
                     var seriesHeight = 100 / noOfMetricValues;
                     var series = {};
                     var tooltip = {};
-                    if ($scope.selectedChartType[nodeId][chartType] == "Line") {
+                    if ($scope.selectedChartType[nodeId][chartType] === "Line") {
+
                         series = {
-                            id: metricValue + "-series",
-                            name: metricValue,
+                            id: metricValue + processId + "-series",
+                            name: processId !== '' ? metricValue + " (" + processId + ")" : metricValue,
+                            metricValue: metricValue,
+                            processId: processId,
                             data: data,
                             yAxis: metricValue
                         };
@@ -415,12 +477,14 @@ angular.module('hpcMonitoringApp')
                             split: true
                         };
                     }
-                    else if ($scope.selectedChartType[nodeId][chartType] == "Scatter") {
+                    else if ($scope.selectedChartType[nodeId][chartType] === "Scatter") {
                         series = {
                             type: 'scatter',
                             // color: 'rgba(150, 83, 83, .5)',
-                            id: metricValue + "-series",
-                            name: metricValue,
+                            id: metricValue + processId + "-series",
+                            name: processId !== '' ? metricValue + " (" + processId + ")" : metricValue,
+                            metricValue: metricValue,
+                            processId: processId,
                             data: data,
                             yAxis: metricValue
 
@@ -437,7 +501,7 @@ angular.module('hpcMonitoringApp')
                         var chart = $("#" + containerId).highcharts();
                         var top = (seriesHeight * chart.options.yAxis.length) + 15;
                         seriesHeight = seriesHeight - 8;
-                        if (typeof chart.get(metricValue + "-series") === 'undefined') {
+                        if (typeof chart.get(metricValue) === 'undefined') {
                             chart.addAxis({
                                 opposite: false,
                                 id: metricValue,
@@ -452,7 +516,10 @@ angular.module('hpcMonitoringApp')
                             chart.addSeries(series);
                         }
                         else {
-                            chart.get(metricValue + "-series").setData(data);
+                            if (typeof chart.get(metricValue + processId + "-series") !== 'undefined')
+                                chart.get(metricValue + processId + "-series").setData(data);
+                            else
+                                chart.addSeries(series);
                         }
                         return;
 
@@ -528,24 +595,33 @@ angular.module('hpcMonitoringApp')
                                     for (var k = 0; k < chart.series.length; k++) {
                                         if (chart.series[k].name.toLowerCase().startsWith("navigator"))
                                             continue;
+                                        var url;
+                                        var filters = {
+                                            "dateFrom": e.min,
+                                            "dateTo": e.max,
+                                            "nodeId": nodeId,
+                                            "type": chartType,
+                                            "metricValue": chart.series[k].options.metricValue
+                                        };
+
+                                        if (chart.series[k].options.processId !== '') {
+                                            url = "/api/getJobMetricsData";
+                                            filters['processId'] = chart.series[k].options.processId;
+                                            filters['jobId'] = $scope.currentJobId;
+                                        }
+                                        else
+                                            url = '/api/getMetricsData';
                                         $http({
                                             method: 'GET',
-                                            url: '/api/getMetricsData',
+                                            url: url,
                                             params: {
-                                                filters: {
-                                                    "dateFrom": e.min,
-                                                    "dateTo": e.max,
-                                                    "nodeId": nodeId,
-                                                    "type": chartType,
-                                                    "metricValue": chart.series[k].name
-                                                }
+                                                filters: filters
                                             }
-                                        }).then((function (metricValue) {
+                                        }).then((function (seriesId) {
                                                 return function (response) {
-                                                    chart.get(JSON.parse(metricValue) + "-series").setData(response.data.data);
-
+                                                    chart.get(seriesId).setData(response.data.data);
                                                 }
-                                            })(JSON.stringify(chart.series[k].name))
+                                            })(chart.series[k].options.id)
                                         ).catch(function (err) {
                                             console.log(err);
                                         })
