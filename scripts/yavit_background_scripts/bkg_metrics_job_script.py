@@ -274,7 +274,8 @@ def jobMetricsChecker():
             jobCollection = db.job
 
             for document in jobCollection.find(
-                    {'or': [{"metrices": {'$exists': False}}, {"end_time": {'$exists': False}}]}).sort('_id', 1):
+                    {'$and': [{"metrices": {'$exists': False}}, {"end_time": {'$exists': True}},
+                              {"end_time": {'$gt': 0}}]}).sort('_id', 1):
                 existingMetrics = []
 
                 # process job if starting is greater than 0
@@ -286,6 +287,9 @@ def jobMetricsChecker():
                     for metric in metricesNames:
                         if db[metric].find_one({'Timestamp': {'$gte': start_time_milli, '$lte': end_time_milli}}):
                             existingMetrics.append(metric)
+
+                    for dyn_metric in db.dynamic_schema.find({"Jobid": document['_id']}, {"name": 1}):
+                        existingMetrics.append(dyn_metric['name'])
 
                 # update job by adding/updating metrices field
                 jobCollection.update_one({'_id': document['_id']}, {'$set': {'metrices': existingMetrics}},
@@ -356,10 +360,12 @@ def processSpapiOverview(schemaName):
             for jobMetric in allJobMetrics:
                 if 'processedOverview' in jobMetric:
                     continue
-                job = db.job.find_one({'_id': jobMetric['Jobid']})
-                if not (job and 'end_time' in job and job['end_time'] <> 0):
+                breakLoop = False
+                for job in db.job.find({'_id': jobMetric['Jobid']}):
+                    if not ('end_time' in job and job['end_time'] <> 0 and job['end_time'] <> ""):
+                        breakLoop = True
+                if breakLoop:
                     break
-
                 metricFields = jobMetric['structure']
                 for metric in metricFields:
                     aggregateResult = db[schemaName].aggregate([
@@ -609,7 +615,7 @@ if __name__ == '__main__':
                     metricProcesses[metric] = mp.Process(target=processCollection, args=(metric, schema[metric]))
                     metricProcesses[metric].start()
 
-            #2. Create process to check what metrics exist for all jobs
+            # 2. Create process to check what metrics exist for all jobs
             if jobProcess is None or (not (jobProcess.is_alive())):
                 jobProcess = mp.Process(target=jobMetricsChecker)
                 jobProcess.start()
