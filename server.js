@@ -12,7 +12,7 @@ var passport = require('passport');
 // var SERVER_PORT = 8000; // set port
 
 // for development purposes only
-var SERVER_PORT = process.env.PORT || 8000; // set port
+var SERVER_PORT = process.env.PORT || 5000; // set port
 
 //root path
 rootPath = __dirname;
