@@ -8,16 +8,11 @@ mongoose.Promise = require('bluebird');
 
 var gracefulShutdown;
 var dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
+
 var mongoOptions =
 {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
-    db: {safe: true},
-    server: {
-        socketOptions: {
-            keepAlive: 60000
-        }
-    }
+    useUnifiedTopology: true
 };
 
 mongoose.connect(dbURI, mongoOptions);
@@ -26,9 +21,11 @@ mongoose.connect(dbURI, mongoOptions);
 mongoose.connection.on('connected', function () {
     console.log('Mongoose connected to ' + dbURI);
 });
+
 mongoose.connection.on('error', function (err) {
     console.log('Mongoose connection error: ' + err);
 });
+
 mongoose.connection.on('disconnected', function () {
     console.log('Mongoose disconnected');
 });
@@ -41,12 +38,14 @@ gracefulShutdown = function (msg, callback) {
         callback();
     });
 };
+
 /* For nodemon restarts */
 process.once('SIGUSR2', function () {
     gracefulShutdown('nodemon restart', function () {
         process.kill(process.pid, 'SIGUSR2');
     });
 });
+
 /* For app termination */
 process.on('SIGINT', function () {
     gracefulShutdown('app termination', function () {
