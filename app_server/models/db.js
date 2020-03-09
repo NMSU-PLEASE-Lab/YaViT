@@ -1,24 +1,26 @@
 /**
  *  Modules
  */
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
+
 /*Promise is depreciated in recent monoogse versions so separate promise package is required */
 mongoose.Promise = require('bluebird');
 
 var gracefulShutdown;
 var dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
-
 var mongoOptions =
-    {
-        db: {safe: true},
-        server: {
-            socketOptions: {
-                keepAlive: 60000
-            }
+{
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    db: {safe: true},
+    server: {
+        socketOptions: {
+            keepAlive: 60000
         }
-    };
+    }
+};
 
-mongoose.connect(dbURI,mongoOptions);
+mongoose.connect(dbURI, mongoOptions);
 
 /*CONNECTION EVENTS*/
 mongoose.connection.on('connected', function () {
