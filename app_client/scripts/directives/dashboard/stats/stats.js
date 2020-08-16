@@ -7,21 +7,20 @@
  * # stats
  */
 angular.module('hpcMonitoringApp')
-    .directive('stats',function() {
+    .directive('stats', () => {
     	return {
-  		templateUrl:'scripts/directives/dashboard/stats/stats.html',
-  		restrict:'E',
-  		replace:true,
-  		scope: {
-        'model': '=',
-        'comments': '@',
-        'number': '@',
-        'name': '@',
-        'colour': '@',
-        'details':'@',
-        'type':'@',
-        'goto':'@'
-  		}
-  		
-  	}
+         templateUrl:'scripts/directives/dashboard/stats/stats.html',
+         restrict:'E',
+         replace:true,
+         scope: {
+         'model': '=',
+         'comments': '@',
+         'number': '@',
+         'name': '@',
+         'colour': '@',
+         'details':'@',
+         'type':'@',
+         'goto':'@'
+         }
+      }
   });

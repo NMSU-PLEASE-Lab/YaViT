@@ -1,26 +1,26 @@
 /**
  * Service for handling all authentication functions
  */
-(function () {
+(() =>  {
 
     angular
         .module('hpcMonitoringApp')
-        .factory('authentication', ['$http', '$window', function ($http, $window) {
+        .factory('authentication', ['$http', '$window',  ($http, $window) => {
 
             /*save token to local storage*/
-            var saveToken = function (token) {
+            let saveToken =  (token) => {
                 $window.localStorage['hpcMonitoring-token'] = token;
             };
 
             /*get current token*/
-            var getToken = function () {
+            let getToken =  () => {
                 return $window.localStorage['hpcMonitoring-token'];
             };
 
             /*Check if user is logged in currently*/
-            var isLoggedIn = function () {
-                var token = getToken();
-                var payload;
+            let isLoggedIn =  () => {
+                let token = getToken();
+                let payload;
 
                 if (token) {
                     payload = token.split('.')[1];
@@ -34,20 +34,18 @@
             };
 
             /*Get Current User*/
-            var currentUser = function () {
+            let currentUser =  () => {
                 if (isLoggedIn()) {
-                    var token = getToken();
-                    var payload = token.split('.')[1];
+                    let token = getToken();
+                    let payload = token.split('.')[1];
                     payload = $window.atob(payload);
                     payload = JSON.parse(payload);
 
                     /*Special case when admin enters the specific user interface */
-                    var isAdminAsUser = typeof $window.localStorage['adminAsUser'] !== 'undefined' && $window.localStorage['adminAsUser'] !== '';
-                    if(payload.usertype==1 && isAdminAsUser)
-                    {
+                    let isAdminAsUser = typeof $window.localStorage['adminAsUser'] !== 'undefined' && $window.localStorage['adminAsUser'] !== '';
+                    if(payload.usertype==1 && isAdminAsUser){
                         payload.username = $window.localStorage['adminAsUser'];
                         payload.usertype =  2;
-
                     }
                     return {
                         username: payload.username,
@@ -58,20 +56,16 @@
             };
 
             /*on login*/
-            login = function (user) {
+            login =  (user) => {
                 return $http.post('/api/login', user)
-                    .then(function (response) {
-                        var data = response.data;
+                    .then( (response) => {
+                        let data = response.data;
                         saveToken(data.token);
-
                     })
-
             };
 
             /*on logout*/
-            logout = function () {
-                $window.localStorage.removeItem('hpcMonitoring-token');
-            };
+            logout =  () => $window.localStorage.removeItem('hpcMonitoring-token');
 
             return {
                 currentUser: currentUser,

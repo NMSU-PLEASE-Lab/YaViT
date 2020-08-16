@@ -1,8 +1,8 @@
 /**
  * Controller for 'node' collection
  */
-var mongoose = require('mongoose');
-var Node = mongoose.model('Node', {"_id": Number}, 'node');
+const mongoose = require('mongoose');
+const Node = mongoose.model('Node', {"_id": Number}, 'node');
 
 
 /**
@@ -10,14 +10,13 @@ var Node = mongoose.model('Node', {"_id": Number}, 'node');
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.allNodes = function (req, res) {
-    Node.find()
-        .sort({"_id": 1})
-        .exec(function (err, nodes) {
-            res.status(200).json(nodes);
-        });
-
-
+module.exports.allNodes = (req, res) => {
+    Node
+    .find()
+    .sort({"_id": 1})
+    .exec( (err, nodes) => {
+        res.status(200).json(nodes);
+    });
 };
 
 /**
@@ -25,12 +24,12 @@ module.exports.allNodes = function (req, res) {
  * @param Ids - Ids (array) of nodes
  * @param callback - callback function
  */
-module.exports.getNodesByIds = function (Ids, callback) {
+module.exports.getNodesByIds = (Ids, callback) => {
     Node.find({
         "_id": {
             "$in": Ids
         }
-    }).exec(function (err, nodes) {
+    }).exec((err, nodes) => {
        return callback(nodes);
     });
 };

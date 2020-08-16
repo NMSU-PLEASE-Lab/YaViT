@@ -6,49 +6,42 @@ const mongoose = require('mongoose');
 /*Promise is depreciated in recent monoogse versions so separate promise package is required */
 mongoose.Promise = require('bluebird');
 
-var gracefulShutdown;
-var dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
+let gracefulShutdown;
 
-var mongoOptions =
-{
+const dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
+
+let mongoOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true
 };
 
+// Connect to DB
 mongoose.connect(dbURI, mongoOptions);
 
 /*CONNECTION EVENTS*/
-mongoose.connection.on('connected', function () {
-    console.log('Mongoose connected to ' + dbURI);
-});
-
-mongoose.connection.on('error', function (err) {
-    console.log('Mongoose connection error: ' + err);
-});
-
-mongoose.connection.on('disconnected', function () {
-    console.log('Mongoose disconnected');
-});
+mongoose.connection.on('connected', () => console.log('Mongoose connected to ' + dbURI) );
+mongoose.connection.on('error', (err) => console.log('Mongoose connection error: ' + err) );
+mongoose.connection.on('disconnected', () =>  console.log('Mongoose disconnected') );
 
 /* CAPTURE APP TERMINATION/RESTART EVENTS */
 /* To be called when process is restarted or terminated */
-gracefulShutdown = function (msg, callback) {
-    mongoose.connection.close(function () {
+gracefulShutdown = (msg, callback) => {
+    mongoose.connection.close(() => {
         console.log('Mongoose disconnected through ' + msg);
         callback();
     });
 };
 
 /* For nodemon restarts */
-process.once('SIGUSR2', function () {
-    gracefulShutdown('nodemon restart', function () {
+process.once('SIGUSR2', () => {
+    gracefulShutdown('nodemon restart', () => {
         process.kill(process.pid, 'SIGUSR2');
     });
 });
 
 /* For app termination */
-process.on('SIGINT', function () {
-    gracefulShutdown('app termination', function () {
+process.on('SIGINT', () => {
+    gracefulShutdown('app termination', () => {
         process.exit(0);
     });
 });

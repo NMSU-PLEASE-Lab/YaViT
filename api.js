@@ -3,27 +3,29 @@
  */
 
 /*Modules*/
-var express = require('express');
-var router = express.Router();
-var jwt = require('express-jwt');
-var auth = jwt({
-    secret: 'MY_SECRET',
-    userProperty: 'payload'
-});
+const express = require('express');
+const jwt = require('express-jwt');
 
-/* Controllers*/
-var ctrlProfile = require('../controllers/user-controller');
-var ctrlAuth = require('../controllers/authentication');
-var ctrlNode = require('../controllers/node-controller');
-var ctrlMetrics = require('../controllers/metrics-controller');
-var ctrlJob = require('../controllers/job-controller');
-var ctrlApp = require('../controllers/app-controller');
-var ctrlEvent = require('../controllers/events-controller');
+// var router = express.Router();
 
-module.exports = function (app,io) {
+// var auth = jwt({
+//     secret: 'MY_SECRET',
+//     userProperty: 'payload'
+// });
 
-    /*On default server root server index file*/
-    app.get('/', function (req, res) {
+/* App Controllers*/
+const ctrlProfile = require('../controllers/user-controller');
+const ctrlAuth = require('../controllers/authentication');
+const ctrlNode = require('../controllers/node-controller');
+const ctrlMetrics = require('../controllers/metrics-controller');
+const ctrlJob = require('../controllers/job-controller');
+const ctrlApp = require('../controllers/app-controller');
+const ctrlEvent = require('../controllers/events-controller');
+
+module.exports = (app, io) => {
+
+    // On default server root server index file
+    app.get('/', (req, res) => {
         res.sendFile(rootPath + '/app_client/index.html');
     });
 
@@ -50,7 +52,6 @@ module.exports = function (app,io) {
     app.get('/api/getProcessIds', ctrlMetrics.getProcessIds);
 
     app.get('/api/getSpapiOverview', ctrlMetrics.getSpapiOverview);
-
 
     app.get('/api/getJobsCount', ctrlJob.jobsCount);
 
@@ -85,18 +86,13 @@ module.exports = function (app,io) {
     app.get('/api/getRunQualityOfApplications', ctrlApp.runQualityOfApplications);
 
 
-    //send realtime events to client
-    io.sockets.on('connection', function (socket) {
-        setInterval(function () {
+    // send realtime events to client
+    io.sockets.on('connection', (socket) => {
+        setInterval(() => {
             //send server time
-            var now = new Date();
+            let now = new Date();
             socket.emit('server:time', now);
-
-
-        }, 2000)
-
+        }, 2000);
     });
-
-
 };
 

@@ -76,15 +76,10 @@ angular.module('hpcMonitoringApp')
                                 console.log(err);
                             });
                         });
-
-
                     });
-
-
                 }).catch(function (err) {
                     console.log(err);
                 });
-
 
                 function getSpapiOverview() {
                     $scope.spapiHeaders = [];
@@ -107,7 +102,6 @@ angular.module('hpcMonitoringApp')
                     .catch(function (err) {
                         console.log(err);
                     });
-
                 }
 
                 function getJobAndEventData() {
@@ -199,7 +193,6 @@ angular.module('hpcMonitoringApp')
                                             ticked: false
                                         });
                             }
-
                         }
 
                         InitializeDateTimeSlider();

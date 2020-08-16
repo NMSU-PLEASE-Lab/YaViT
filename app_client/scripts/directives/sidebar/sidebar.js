@@ -8,42 +8,42 @@
  */
 
 angular.module('hpcMonitoringApp')
-    .directive('sidebar', ['$location', function () {
+    .directive('sidebar', ['$location',  () => {
         return {
             template: '<ng-include src="getTemplateUrl()" />',
             restrict: 'E',
             scope: {},
-            controller: ['$scope', 'socket', 'authentication', function ($scope, socket, authentication) {
-                var user = authentication.currentUser();
+            controller: ['$scope', 'socket', 'authentication',  ($scope, socket, authentication) => {
+                let user = authentication.currentUser();
                 if (user.usertype == 1)
                     $scope.usertype = 'admin';
                 else
                     $scope.usertype = 'user';
 
-                $scope.getTemplateUrl = function () {
+                $scope.getTemplateUrl =  () => {
                     return "scripts/directives/sidebar/sidebar." + $scope.usertype + ".html";
                 };
 
                 $scope.selectedMenu = 'dashboard';
-                $scope.collapseVar = 0;
-                $scope.multiCollapseVar = 0;
-                socket.on('server:time', function (data) {
+                $scope.collapselet = 0;
+                $scope.multiCollapselet = 0;
+                socket.on('server:time',  (data) => {
                     $scope.serverTime = moment(data).format("ddd MMM Do YYYY, h:mm:ss a");
                 });
-                $scope.check = function (x) {
+                $scope.check =  (x) => {
 
-                    if (x == $scope.collapseVar)
-                        $scope.collapseVar = 0;
+                    if (x == $scope.collapselet)
+                        $scope.collapselet = 0;
                     else
-                        $scope.collapseVar = x;
+                        $scope.collapselet = x;
                 };
 
-                $scope.multiCheck = function (y) {
+                $scope.multiCheck =  (y) => {
 
-                    if (y == $scope.multiCollapseVar)
-                        $scope.multiCollapseVar = 0;
+                    if (y == $scope.multiCollapselet)
+                        $scope.multiCollapselet = 0;
                     else
-                        $scope.multiCollapseVar = y;
+                        $scope.multiCollapselet = y;
                 };
             }]
         }

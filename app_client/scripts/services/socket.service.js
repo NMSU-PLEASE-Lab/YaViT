@@ -2,21 +2,21 @@
  * Socket service for handling socket message passing from server
  */
 angular.module('hpcMonitoringApp')
-    .factory('socket',['$rootScope',function ($rootScope) {
-    var socket = io.connect();
+    .factory('socket',['$rootScope', ($rootScope) => {
+    let socket = io.connect();
     return {
-        on: function (eventName, callback) {
-            socket.on(eventName, function () {
-                var args = arguments;
-                $rootScope.$apply(function () {
+        on: (eventName, callback) => {
+            socket.on(eventName, () => {
+                let args = arguments;
+                $rootScope.$apply( () => {
                     callback.apply(socket, args);
                 });
             });
         },
-        emit: function (eventName, data, callback) {
-            socket.emit(eventName, data, function () {
-                var args = arguments;
-                $rootScope.$apply(function () {
+        emit: (eventName, data, callback) => {
+            socket.emit(eventName, data, () => {
+                let args = arguments;
+                $rootScope.$apply(() => {
                     if (callback) {
                         callback.apply(socket, args);
                     }

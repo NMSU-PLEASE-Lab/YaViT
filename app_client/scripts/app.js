@@ -22,7 +22,7 @@ angular
         'googlechart',
         'rzModule'
     ])
-    .config(['$stateProvider', '$urlRouterProvider', '$ocLazyLoadProvider', '$qProvider', function ($stateProvider, $urlRouterProvider, $ocLazyLoadProvider, $qProvider) {
+    .config(['$stateProvider', '$urlRouterProvider', '$ocLazyLoadProvider', '$qProvider', ($stateProvider, $urlRouterProvider, $ocLazyLoadProvider, $qProvider) => {
 
         $ocLazyLoadProvider.config({
             debug: false,
@@ -40,7 +40,7 @@ angular
                 url: '/login',
                 controller: 'loginCtrl',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -56,7 +56,7 @@ angular
                 reload: true,
                 templateUrl: 'views/main.html',
                 resolve: {
-                    loadMyDirectives: function ($ocLazyLoad) {
+                    loadMyDirectives: ($ocLazyLoad) => {
                         return $ocLazyLoad.load(
                             {
                                 name: 'hpcMonitoringApp',
@@ -110,7 +110,7 @@ angular
                 controller: 'userHomeCtrl',
                 templateUrl: 'views/user/job-home.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -126,7 +126,7 @@ angular
                 controller: 'userAppHomeCtrl',
                 templateUrl: 'views/user/app-home.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -142,7 +142,7 @@ angular
                 controller: 'userMyJobCtrl',
                 templateUrl: 'views/user/myjobs.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -158,7 +158,7 @@ angular
                 controller: 'userJobDetailCtrl',
                 templateUrl: 'views/user/jobdetail.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -173,7 +173,7 @@ angular
                 reload: true,
                 templateUrl: 'views/main.html',
                 resolve: {
-                    loadMyDirectives: function ($ocLazyLoad) {
+                    loadMyDirectives: ($ocLazyLoad) => {
                         return $ocLazyLoad.load(
                             {
                                 name: 'hpcMonitoringApp',
@@ -182,7 +182,6 @@ angular
                                     'scripts/directives/header/header-notification/header-notification.js',
                                     'scripts/directives/sidebar/sidebar.js',
                                     'scripts/directives/dashboard/stats/stats.js'
-
                                 ]
                             }),
                             $ocLazyLoad.load(
@@ -226,7 +225,7 @@ angular
                 controller: 'adminCtrl',
                 templateUrl: 'views/admin/home.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -242,7 +241,7 @@ angular
                 controller: 'adminUsersCtrl',
                 templateUrl: 'views/admin/users.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -259,7 +258,7 @@ angular
                 controller: 'adminNodeDetailCtrl',
                 templateUrl: 'views/admin/nodedetail.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -269,14 +268,13 @@ angular
                     }
                 }
             })
-
             .state('admin.alljobs', {
                 url: '/alljobs',
                 reload: true,
                 controller: 'adminAllJobCtrl',
                 templateUrl: 'views/admin/alljobs.html',
                 resolve: {
-                    loadMyFiles: function ($ocLazyLoad) {
+                    loadMyFiles: ($ocLazyLoad) => {
                         return $ocLazyLoad.load({
                             name: 'hpcMonitoringApp',
                             files: [
@@ -287,12 +285,9 @@ angular
                     }
                 }
             })
-
-
     }])
-
-    .run(['$rootScope', '$location', 'authentication', '$state', function ($rootScope, $location, authentication, $state) {
-        $rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {
+    .run(['$rootScope', '$location', 'authentication', '$state', ($rootScope, $location, authentication, $state) => {
+        $rootScope.$on('$stateChangeStart', (event, toState, toParams, fromState, fromParams) => {
             /*Global Vars and Settings */
             Highcharts.setOptions({global: {useUTC: false}});
 
@@ -321,17 +316,13 @@ angular
             if ($location.path() !== '/login' && !authentication.isLoggedIn()) {
                 event.preventDefault();
                 $location.path('/login').replace();
-            }
-            else if ($location.path() == '/login' && authentication.isLoggedIn()) {
+            } else if ($location.path() == '/login' && authentication.isLoggedIn()) {
                 if (authentication.currentUser().usertype == 1)
                     $location.path('/admin/home').replace();
                 else
                     $location.path('/user/home').replace();
-
             }
         });
-
-
     }]);
 
 

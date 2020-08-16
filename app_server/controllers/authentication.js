@@ -1,20 +1,18 @@
 /**
  * Authentication Model For generating token
  */
-var passport = require('passport');
-var mongoose = require('mongoose');
-var User = mongoose.model('User');
+const passport = require('passport');
+const mongoose = require('mongoose');
+let User = mongoose.model('User');
 
-var sendJSONresponse = function(res, status, content) {
+let sendJSONresponse = (res, status, content) => {
   res.status(status);
   res.json(content);
 };
 
-
-module.exports.login = function(req, res) {
-
-  passport.authenticate('local', function(err, user, info){
-    var token;
+module.exports.login = (req, res) => {
+  passport.authenticate('local', (err, user, info) => {
+    let token;
 
     /* If Passport throws/catches an error */
     if (err) {
@@ -26,13 +24,10 @@ module.exports.login = function(req, res) {
     if(user){
       token = user.generateJwt();
       res.status(200);
-      res.json({
-        "token" : token
-      });
+      res.json({"token" : token});
     } else {
       /* If user is not found */
       res.status(401).json(info);
     }
   })(req, res);
-
 };

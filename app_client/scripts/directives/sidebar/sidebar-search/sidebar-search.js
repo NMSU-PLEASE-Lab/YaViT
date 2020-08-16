@@ -8,14 +8,14 @@
  */
 
 angular.module('hpcMonitoringApp')
-  .directive('sidebarSearch',function() {
+  .directive('sidebarSearch',() => {
     return {
       templateUrl:'scripts/directives/sidebar/sidebar-search/sidebar-search.html',
       restrict: 'E',
       replace: true,
       scope: {
       },
-      controller:function($scope){
+      controller: $scope => {
         $scope.selectedMenu = 'home';
       }
     }

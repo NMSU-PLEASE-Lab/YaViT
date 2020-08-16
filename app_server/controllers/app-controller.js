@@ -153,7 +153,7 @@ module.exports.averageRuntimeOfApplications = function (req, res) {
  * @param res - HTTP response
  */
 module.exports.runQualityOfApplications = function (req, res) {
-    ctrlJob.runQualityByApplication(req.query.username, function (apps) {
+    ctrlJob.runQualityByApplication(req.query.username, (apps) => {
         var resp = {};
         resp['Applications'] = [];
         resp['Healthy'] = [];

@@ -274,10 +274,6 @@ angular.module('hpcMonitoringApp')
                             function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                                 $compile(nRow)($scope);
                             })
-
-
                 }
-
-
             }]);
 

@@ -1,7 +1,7 @@
-function CreateDialog(e,thisObj,message, height, width, title,YesCallback,OkMessage,CancelMessage) {
+let CreateDialog = (e,thisObj,message, height, width, title,YesCallback,OkMessage,CancelMessage) => {
     if(e!=null&&typeof e !='undefined'&&e!='')
         e.preventDefault();
-     var dynamicDialog = $('<div id="MyDialog">'+ message + '</div>');
+     let dynamicDialog = $('<div id="MyDialog">'+ message + '</div>');
     dynamicDialog.dialog({
         async:false,
         autoOpen: true,
@@ -9,7 +9,7 @@ function CreateDialog(e,thisObj,message, height, width, title,YesCallback,OkMess
         modal: true,
         height: "auto",
         width:"auto",
-        create: function( event, ui ) {
+        create: ( event, ui ) => {
             // Set maxWidth
             $(this).css("maxWidth", "400px");
         },
@@ -22,7 +22,7 @@ function CreateDialog(e,thisObj,message, height, width, title,YesCallback,OkMess
              },
             {
                 text:CancelMessage,
-                click: function() {
+                click: () => {
                 $(this).dialog("close");
                 return false;
             }
@@ -30,20 +30,18 @@ function CreateDialog(e,thisObj,message, height, width, title,YesCallback,OkMess
     });
 }
 
-function AlertDialog(title,message)
-{
-
-    var div = $('<div>'+message+'</div>');
+let AlertDialog = (title,message) => {
+    let div = $('<div>'+message+'</div>');
     div.dialog({
         title: title,
         resizable: false,
         modal: true,
         buttons: {
-            "OK": function () {
+            "OK": () => {
                 $(this).dialog("close");
             }
         },
-        close: function () {
+        close: () => {
             $(this).dialog("close");
         }
     });

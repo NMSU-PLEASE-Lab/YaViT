@@ -1,14 +1,15 @@
 /**
- *Controller for request relating to job
+ *Controller for requests relating to job
  */
-var _ = require('underscore');
-var mongoose = require('mongoose');
-var Job = mongoose.model('Job', {"_id": Number}, 'job');
-var NodeJob = mongoose.model('NodeJob', {}, 'node_job');
-var ctrlNode = require('../controllers/node-controller');
-var moment = require('moment');
+const _ = require('underscore');
+const mongoose = require('mongoose');
+const ctrlNode = require('../controllers/node-controller');
+const moment = require('moment');
 require("moment-duration-format");
-var MongoClient = require('mongodb').MongoClient;
+
+let Job = mongoose.model('Job', {"_id": Number}, 'job');
+let NodeJob = mongoose.model('NodeJob', {}, 'node_job');
+let MongoClient = require('mongodb').MongoClient;
 
 
 /**
@@ -16,59 +17,62 @@ var MongoClient = require('mongodb').MongoClient;
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.jobsCount = function (req, res) {
-    var filterParams = {};
+module.exports.jobsCount = (req, res) => {
+    let filterParams = {};
+
     if (typeof req.query.owner !== 'undefined')
         filterParams = {"owner": req.query.owner};
+
     if (typeof req.query.app_name !== 'undefined' && req.query.app_name !== '')
         filterParams.ApplicationName = req.query.app_name;
-    Job
-        .count(filterParams, function (err, count) {
-            if (err)
-                return res.status(400).json({
-                    "message": err
-                });
-            return res.status(200).json(count);
-        });
-
-};
-
-
-/**
- * Get list of unique JobsName by filterParams
- * Name in job collection is an application
- * @param req - HTTP request
- * @param res - HTTP response
- */
-module.exports.getJobsName = function (req, res) {
-    var filterParams = {};
-    if (typeof req.query.nextId !== 'undefined') {
-        req.query.nextId = parseInt(req.query.nextId);
-        if (req.query.nextId == -1)
-            return res.status(200).json([]);
-    }
-
-    if (typeof req.query.owner !== 'undefined') {
-        filterParams.owner = req.query.owner
-    }
-    if (typeof req.query.dateFrom !== 'undefined' && typeof req.query.dateTo !== 'undefined') {
-        filterParams.queue_time = {
-            $gte: parseInt(req.query.dateFrom),
-            $lte: parseInt(req.query.dateTo)
-        };
-    }
-    filterParams.name = {$ne: null};
 
     Job
-        .distinct("name", filterParams, {'name': -1}).exec(function (err, jobs) {
+    .count(filterParams, (err, count) => {
         if (err)
-            return res.status(400).json({
-                "message": err
-            });
-        return res.status(200).json(jobs);
+            return res.status(400).json({"message": err});
 
+        return res.status(200).json(count);
     });
+};
 
+
+/**
+ * Get list of unique JobsName by filterParams
+ * Name in job collection is an application
+ * @param req - HTTP request
+ * @param res - HTTP response
+ */
+module.exports.getJobsName = (req, res) => {
+    let filterParams = {};
+
+    if (typeof req.query.nextId !== 'undefined') {
+        req.query.nextId = parseInt(req.query.nextId);
+
+        if (req.query.nextId == -1)
+            return res.status(200).json([]);
+    }
+
+    if (typeof req.query.owner !== 'undefined') {
+        filterParams.owner = req.query.owner
+    }
+
+    if (typeof req.query.dateFrom !== 'undefined' && typeof req.query.dateTo !== 'undefined') {
+        filterParams.queue_time = {
+            $gte: parseInt(req.query.dateFrom),
+            $lte: parseInt(req.query.dateTo)
+        };
+    }
+
+    filterParams.name = {$ne: null};
+
+    Job
+    .distinct("name", filterParams, {'name': -1})
+    .exec((err, jobs) => {
+        if (err)
+            return res.status(400).json({"message": err});
+
+        return res.status(200).json(jobs);
+    });
 };
 
 /**
@@ -77,10 +81,12 @@ module.exports.getJobsName = function (req, res) {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobsNameCursored = function (req, res) {
-    var filterParams = {};
+module.exports.getJobsNameCursored = (req, res) => {
+    let filterParams = {};
+
     if (typeof req.query.nextId !== 'undefined') {
         req.query.nextId = parseInt(req.query.nextId);
+
         if (req.query.nextId == -1)
             return res.status(200).json([]);
     }
@@ -88,44 +94,46 @@ module.exports.getJobsNameCursored = function (req, res) {
     if (typeof req.query.owner !== 'undefined') {
         filterParams.owner = req.query.owner
     }
+
     if (typeof req.query.dateFrom !== 'undefined' && typeof req.query.dateTo !== 'undefined') {
+
         filterParams.queue_time = {
             $gte: parseInt(req.query.dateFrom),
             $lte: parseInt(req.query.dateTo)
         };
     }
+
     filterParams.name = {$ne: null};
 
     Job
-        .distinct("name", filterParams, {'name': -1}).exec(function (err, jobs) {
+    .distinct("name", filterParams, {'name': -1})
+    .exec( (err, jobs) => {
         if (err)
-            return res.status(400).json({
-                "message": err
-            });
-        var next = 0;
+            return res.status(400).json({"message": err});
+
+        let next = 0;
+
         if (typeof req.query.nextId == 'undefined' || req.query.nextId == 0) {
-            if (jobs.length <= 100)
+            if (jobs.length <= 100){
                 next = -1;
-            else
+            } else {
                 next = 100;
-            return res.status(200).json(
-                {"nextId": next, "data": jobs.slice(0, 100)}
-            );
+            }
+                
+            return res.status(200).json({"nextId": next, "data": jobs.slice(0, 100)});
         }
         else {
             jobs = jobs.slice(req.query.nextId, req.query.nextId + 101);
 
-            if (jobs.length <= 100)
+            if (jobs.length <= 100){
                 next = -1;
-            else {
+            } else {
                 jobs = jobs.slice(0, 100);
                 next = req.query.nextId + 100;
             }
             return res.status(200).json({"nextId": next, "data": jobs});
         }
-
     });
-
 };
 
 /**
@@ -133,34 +141,37 @@ module.exports.getJobsNameCursored = function (req, res) {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobRunsByName = function (req, res) {
-    var filterParams = {};
+module.exports.getJobRunsByName = (req, res) =>{
+    let filterParams = {};
+
     filterParams.name = req.query.name;
+
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
+
     Job
-        .find(filterParams, {
-            "_id": 1,
-            "queue_time": 1,
-            "start_time": 1,
-            "end_time": 1
-        }).sort({"_id": -1}).exec(function (err, jobs) {
+    .find(filterParams, {
+        "_id": 1,
+        "queue_time": 1,
+        "start_time": 1,
+        "end_time": 1
+    })
+    .sort({"_id": -1})
+    .exec((err, jobs) => {
         if (err)
-            return res.status(400).json({
-                "message": err
-            });
+            return res.status(400).json({"message": err});
         return res.status(200).json(jobs);
     });
 };
-
 
 /**
  * Get all jobs information based on filters provided
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobs = function (req, res) {
-    var filterParams = {};
+module.exports.getJobs = (req, res) => {
+    let filterParams = {};
+
     if (req.body.dateFrom !== 0 && req.body.dateTo !== 0)
         filterParams.queue_time = {$gte: parseInt(req.body.dateFrom), $lte: parseInt(req.body.dateTo)};
 
@@ -172,91 +183,107 @@ module.exports.getJobs = function (req, res) {
 
     if (req.body.search.value.trim() !== "") {
         if (req.body.searchColumn.length === 1) {
-            var regex = new RegExp(req.body.search.value.trim(), "i");
+            let regex = new RegExp(req.body.search.value.trim(), "i");
             filterParams[req.body.searchColumn[0]] = regex;
-        }
-        else {
+        } else {
             filterParams['$or'] = [];
-            req.body.searchColumn.forEach(function (entry) {
-                var obj = {};
-                if (entry == "_id")
+
+            req.body.searchColumn.forEach( entry => {
+                let obj = {};
+
+                if (entry == "_id"){
                     if (!isNaN(parseInt(req.body.search.value.trim()))) {
                         obj[entry] = parseInt(req.body.search.value.trim());
                         filterParams['$or'].push(obj);
-                    }
-
-                    else
+                    } else{
                         regex = new RegExp(req.body.search.value.trim(), "i");
+                    }
+                }
+                    
                 obj[entry] = regex;
                 filterParams['$or'].push(obj);
             });
         }
     }
-    var sortParams = {};
-    req.body.order.forEach(function (entry) {
+
+    let sortParams = {};
+
+    req.body.order.forEach( entry => {
         sortParams[req.body.columns[entry.column].data] = entry.dir == 'desc' ? -1 : 1;
     });
-    Job
-        .find(filterParams, {
-            "_id": 1,
-            "name": 1,
-            "owner": 1,
-            "queue_time": 1,
-            "start_time": 1,
-            "end_time": 1,
-            "mem_bytes": 1,
-            "mem_used": 1,
-            "exit_status": 1,
-            "metrices": 1,
-            "node_req": 1,
-            "job_size": 1,
-            "job_quality": 1
-        }).sort(sortParams).limit(parseInt(req.body.length)).skip(parseInt(req.body.start)).lean().exec(function (err, jobs) {
-        if (err)
-            return res.status(400).json({
-                "message": err
-            });
 
-        NodeJob.find({
-            "JobNumber": {
-                "$in": _.pluck(jobs, '_id')
-            }
-        }, {
-            "_id": -1,
-            "NodeId": 1,
-            "JobNumber": 1
-        }).lean().exec(function (err, nodeJob) {
-            if (err)
-                return res.status(400).json({
-                    "message": err
-                });
-            for (var i = 0; i < jobs.length; i++) {
-                (function () {
+    Job
+    .find(filterParams, {
+        "_id": 1,
+        "name": 1,
+        "owner": 1,
+        "queue_time": 1,
+        "start_time": 1,
+        "end_time": 1,
+        "mem_bytes": 1,
+        "mem_used": 1,
+        "exit_status": 1,
+        "metrices": 1,
+        "node_req": 1,
+        "job_size": 1,
+        "job_quality": 1
+    })
+    .sort(sortParams)
+    .limit(parseInt(req.body.length))
+    .skip(parseInt(req.body.start))
+    .lean()
+    .exec((err, jobs) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
+
+        NodeJob
+        .find(
+            {
+                "JobNumber": {
+                    "$in": _.pluck(jobs, '_id')
+                }
+            }, 
+            {
+                "_id": -1,
+                "NodeId": 1,
+                "JobNumber": 1
+        })
+        .lean()
+        .exec((err, nodeJob) => {   
+            if (err) 
+                return res.status(400).json({"message": err });
+            
+
+            for (let i = 0; i < jobs.length; i++) {
+                (() => {
                     const tmp_i = i;
-                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, function (item) {
+                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob,  item => {
                         return item.JobNumber == jobs[tmp_i]['_id'];
                     }).length;
                 })();
+
                 jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
+
                 if (typeof jobs[i].metrices == 'undefined')
                     jobs[i].metrices = "";
             }
-            Job.count(filterParams, function (err, count) {
-                if (err)
-                    return res.status(400).json({
-                        "message": err
-                    });
-                var resp = {};
+
+            Job.count(filterParams, (err, count) => {
+                if (err) {
+                    return res.status(400).json({"message": err });
+                }
+
+                let resp = {};
+
                 resp.draw = req.body.draw;
                 resp.recordsTotal = count;
                 resp.recordsFiltered = count;
                 resp.data = jobs;
+
                 return res.status(200).json(resp);
-
             });
-
         });
-
     });
 };
 
@@ -266,30 +293,35 @@ module.exports.getJobs = function (req, res) {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobById = function (req, res) {
-    var jobId = parseInt(req.query.jobId);
+module.exports.getJobById =  (req, res) => {
+    let jobId = parseInt(req.query.jobId);
 
     Job
-        .findOne({"_id": jobId}).lean().exec(function (err, job) {
-        if (err)
-            return res.status(400).json({
-                "message": err
-            });
+    .findOne({"_id": jobId})
+    .lean()
+    .exec((err, job) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
+
         if (job == null)
-            return res.status(400).json({
-                "message": "No Job Found"
-            });
-        NodeJob.find({"JobNumber": jobId}).distinct('NodeId').exec(function (err, nodes) {
-            if (err)
-                return res.status(400).json({
-                    "message": err
-                });
-            ctrlNode.getNodesByIds(nodes, function (nodesList) {
+            return res.status(400).json({"message": "No Job Found"});
+            
+        NodeJob
+        .find({"JobNumber": jobId})
+        .distinct('NodeId')
+        .exec( (err, nodes) => {
+            if (err) 
+                return res.status(400).json({"message": err });
+
+            ctrlNode.getNodesByIds(nodes, nodesList => {
                 job['nodes'] = nodesList;
+
                 if (typeof job['end_time'] !== 'undefined' && job['end_time'] !== 0)
                     job['duration'] = moment.duration(moment.unix(job['end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
                 else
                     job['duration'] = "";
+
                 if (typeof job['job_quality'] === 'undefined')
                     job['job_quality'] = 5;
 
@@ -297,12 +329,11 @@ module.exports.getJobById = function (req, res) {
                     job['predicted_duration'] = "Unknown";
                 else
                     job['predicted_duration'] = moment.duration(moment.unix(job['predicted_end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
-                return res.status(200).json(job);
 
+                return res.status(200).json(job);
             });
         });
     });
-
 };
 
 /**
@@ -310,38 +341,42 @@ module.exports.getJobById = function (req, res) {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getActiveJobs = function (req, res) {
-    var filterParams = {};
+module.exports.getActiveJobs = (req, res) => {
+    let filterParams = {};
+
     filterParams['$or'] = [{end_time: {$exists: false}}, {end_time: ""}, {end_time: 0}];
+
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
+
     if (typeof req.query.app_name !== 'undefined' && req.query.app_name !== '')
         filterParams.ApplicationName = req.query.app_name;
-    Job
-        .find(filterParams, {
-            "_id": 1,
-            "name": 1,
-            "owner": 1,
-            "queue_time": 1,
-            "start_time": 1,
-            "predicted_end_time":1
-        }).sort({"_id": -1}).lean().exec(function (err, jobs) {
-        if (err)
-            return res.status(400).json({
-                "message": err
-            });
 
-        for(var i=0;i<jobs.length;i++){
+    Job
+    .find(filterParams, {
+        "_id": 1,
+        "name": 1,
+        "owner": 1,
+        "queue_time": 1,
+        "start_time": 1,
+        "predicted_end_time":1
+    })
+    .sort({"_id": -1})
+    .lean()
+    .exec((err, jobs) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
+
+        for( let i=0; i < jobs.length; i++ ){
            if(typeof(jobs[i].predicted_end_time) === 'undefined')
                 jobs[i].percentCompleted = -1;
            else
                jobs[i].percentCompleted = ((moment().unix() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
-
         }
+
         return res.status(200).json(jobs);
-
     });
-
 };
 
 /**
@@ -349,30 +384,37 @@ module.exports.getActiveJobs = function (req, res) {
  * @param req
  * @param res
  */
-module.exports.getRecentJobs = function (req, res) {
-    var filterParams = {};
+module.exports.getRecentJobs = (req, res) => {
+    let filterParams = {};
+    
     filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}, {end_time: {$ne: 0}}];
 
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
+
     if (typeof req.query.app_name !== 'undefined' && req.query.app_name != '')
         filterParams.ApplicationName = req.query.app_name;
-    Job
-        .find(filterParams, {
-            "_id": 1,
-            "name": 1,
-            "owner": 1,
-            "queue_time": 1,
-            "start_time": 1,
-            "end_time": 1,
-            "exit_status": 1
-        }).sort({"end_time": -1}).limit(10).lean().exec(function (err, jobs) {
-        if (err)
-            return res.status(400).json({
-                "message": err
-            });
 
-        NodeJob.find({
+    Job
+    .find(filterParams, {
+        "_id": 1,
+        "name": 1,
+        "owner": 1,
+        "queue_time": 1,
+        "start_time": 1,
+        "end_time": 1,
+        "exit_status": 1
+    })
+    .sort({"end_time": -1})
+    .limit(10)
+    .lean()
+    .exec((err, jobs) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
+            
+        NodeJob
+        .find({
             "JobNumber": {
                 "$in": _.pluck(jobs, '_id')
             }
@@ -380,26 +422,26 @@ module.exports.getRecentJobs = function (req, res) {
             "_id": -1,
             "NodeId": 1,
             "JobNumber": 1
-        }).lean().exec(function (err, nodeJob) {
-            if (err)
-                return res.status(400).json({
-                    "message": err
-                });
-            for (var i = 0; i < jobs.length; i++) {
-                (function () {
+        })
+        .lean()
+        .exec((err, nodeJob) => {
+            if (err) {
+                return res.status(400).json({"message": err });
+            }
+
+            for (let i = 0; i < jobs.length; i++) {
+                (() => {
                     const tmp_i = i;
-                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, function (item) {
+                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, item => {
                         return item.JobNumber == jobs[tmp_i]['_id'];
                     }).length;
                 })();
                 jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
             }
+
             return res.status(200).json(jobs);
         });
-
-
     });
-
 };
 
 /**
@@ -408,15 +450,14 @@ module.exports.getRecentJobs = function (req, res) {
  * @param user - username
  * @param callback - callback function
  */
-module.exports.getJobsByAppNameAndUser = function (appnames, user, callback) {
+module.exports.getJobsByAppNameAndUser = (appnames, user, callback) => {
 
     Job
-        .find({"ApplicationName": {"$in": appnames}, "owner": user}, {"_id": -1, "ApplicationName": 1})
-        .lean().exec(function (err, jobs) {
+    .find({"ApplicationName": {"$in": appnames}, "owner": user}, {"_id": -1, "ApplicationName": 1})
+    .lean()
+    .exec((err, jobs) => {
         return callback(jobs);
-
     });
-
 };
 
 /**
@@ -424,13 +465,31 @@ module.exports.getJobsByAppNameAndUser = function (appnames, user, callback) {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
-    var filterParams = {};
-    filterParams['$and'] = [{owner: req.query.owner}, {ApplicationName: req.query.app_name},
-        {end_time: {$exists: true}}, {end_time: {$ne: ""}}, {end_time: {$ne: 0}}];
+module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
+    let filterParams = {};
+
+    filterParams['$and'] = [
+        {
+            owner: req.query.owner
+        }, 
+        {
+            ApplicationName: req.query.app_name
+        },
+        {
+            end_time: {$exists: true}
+        }, 
+        {
+            end_time: {$ne: ""}
+        }, 
+        {
+            end_time: {$ne: 0}
+        }
+    ];
 
     Job.aggregate([
-        {$match: filterParams},
+        {
+            $match: filterParams
+        },
         {
             $project: {
                 job_size: 1,
@@ -450,12 +509,15 @@ module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
                 Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
                 Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
                 NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
-
             }
         },
-        {$sort: {_id: 1}}
-    ]).exec(function (err, data) {
-        var resp = {};
+        {
+            $sort: {_id: 1}
+        }
+    ]).exec((err, data) => {
+        let resp = {},
+            conf = 0;
+
         resp['Configuration'] = [];
         resp['Quality'] = {};
         resp['Runtime'] = [];
@@ -470,8 +532,8 @@ module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
         resp['Configuration']['MinJobSize'] = [];
         resp['Configuration']['MaxJobSize'] = [];
         resp['Configuration']['NodeRequest'] = [];
-        var conf = 0;
-        data.forEach(function (item) {
+
+        data.forEach((item) => {
             conf++;
             resp['Quality']['Healthy'].push(item.Healthy);
             resp['Quality']['Abnormal'].push(item.Abnormal);
@@ -481,15 +543,16 @@ module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
 
             resp['Runtime'].push(Math.round(item.Runtime * 100) / 100);
 
-            var confObject = {};
+            let confObject = {};
+
             confObject.Name = "C" + conf;
             confObject.MinJobSize = item.MinJobSize;
             confObject.MaxJobSize = item.MaxJobSize;
             confObject.NodeRequest = item._id;
 
             resp['Configuration'].push(confObject);
-
         });
+
         return res.status(200).json(resp);
     });
 
@@ -500,15 +563,19 @@ module.exports.runQualityAndRuntimeByConfiguration = function (req, res) {
  * @param owner  - username
  * @param callback - callback function
  */
-module.exports.distinctActiveApplications = function (owner, callback) {
-    var filterParams = {};
+module.exports.distinctActiveApplications = (owner, callback) => {
+    let filterParams = {};
+
     filterParams['$or'] = [{end_time: {$exists: false}}, {end_time: ""}, {end_time: 0}];
+
     if (typeof owner !== 'undefined')
         filterParams.owner = owner;
-    Job
-        .distinct("ApplicationName", filterParams, {}).lean().exec(function (err, apps) {
-        return callback(apps);
 
+    Job
+    .distinct("ApplicationName", filterParams, {})
+    .lean()
+    .exec( (err, apps) => {
+        return callback(apps);
     });
 };
 
@@ -518,10 +585,12 @@ module.exports.distinctActiveApplications = function (owner, callback) {
  * @param owner - username
  * @param callback - callback function
  */
-module.exports.getAvgSuccessRateByApplication = function (owner, callback) {
-    var filterParams = {};
+module.exports.getAvgSuccessRateByApplication = (owner, callback) => {
+    let filterParams = {};
+
     if (typeof owner !== 'undefined')
         filterParams.owner = owner;
+
     Job.aggregate([
         {$match: filterParams},
         {
@@ -549,7 +618,7 @@ module.exports.getAvgSuccessRateByApplication = function (owner, callback) {
             }
         },
         {$sort: {Name: 1}}
-    ]).exec(function (err, apps) {
+    ]).exec((err, apps) => {
         return callback(apps)
     });
 };
@@ -560,11 +629,14 @@ module.exports.getAvgSuccessRateByApplication = function (owner, callback) {
  * @param owner - username
  * @param callback - callback function
  */
-module.exports.averageRuntimeByApplication = function (owner, callback) {
-    var filterParams = {};
+module.exports.averageRuntimeByApplication = (owner, callback) => {
+    let filterParams = {};
+
     if (typeof owner !== 'undefined')
         filterParams.owner = owner;
+
     filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}, {end_time: {$ne: ""}}];
+
     Job.aggregate([
         {$match: filterParams},
         {
@@ -586,33 +658,34 @@ module.exports.averageRuntimeByApplication = function (owner, callback) {
                 AverageRunTime: {$divide: ["$runTime", "$count"]}
             }
         },
-        {$sort: {Name: 1}}
-    ]).exec(function (err, apps) {
+        {
+            $sort: {Name: 1}
+        }
+    ]).exec((err, apps) => {
         return callback(apps)
     });
-
 };
 /**
  * Get Average number of nodes used for the application
  * @param owner - username
  * @param callback - callback function
  */
-module.exports.averageNumberOfNodesByApplication = function (owner, callback) {
-    var filterParams = {};
+module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
+    let filterParams = {};
+
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
-    MongoClient.connect(db.dbURI, function (err, db) {
+
+    MongoClient.connect(db.dbURI, (err, db) => {
         db.collection('job').find(filterParams, {
             "_id": 1,
             "ApplicationName": 1
-        }).forEach(function (job) {
+        }).forEach((job) => {
             job.numberOfNodes = db.collection('node_job').count({"JobNumber": job._id})
-        }).toArray(function (err, data) {
+        }).toArray((err, data) => {
 
         });
-
     });
-
 };
 
 /**
@@ -620,13 +693,18 @@ module.exports.averageNumberOfNodesByApplication = function (owner, callback) {
  * @param owner - username
  * @param callback - callback function
  */
-module.exports.runQualityByApplication = function (owner, callback) {
-    var filterParams = {};
-    if (typeof owner !== 'undefined')
+module.exports.runQualityByApplication = (owner, callback) => {
+    let filterParams = {};
+
+    if (typeof owner !== 'undefined'){
         filterParams.owner = owner;
+    }
+        
     // filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}];
     Job.aggregate([
-        {$match: filterParams},
+        {
+            $match: filterParams
+        }, 
         {
             $group: {
                 _id: "$ApplicationName",
@@ -635,14 +713,12 @@ module.exports.runQualityByApplication = function (owner, callback) {
                 Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
                 Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
                 NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
-
-
             }
         },
-        {$sort: {_id: 1}}
-    ]).exec(function (err, apps) {
-        return callback(apps)
+        {
+            $sort: {_id: 1}
+        }
+    ]).exec((err, apps) => {
+        return callback(apps);
     });
-
 };
-

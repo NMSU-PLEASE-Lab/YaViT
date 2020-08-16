@@ -1,32 +1,24 @@
-var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
-var mongoose = require('mongoose');
-var User = mongoose.model('User');
+const passport = require('passport');
+const mongoose = require('mongoose');
+let User = mongoose.model('User');
+let LocalStrategy = require('passport-local').Strategy;
 
-passport.use(new LocalStrategy({
-    usernameField: 'username'
-  },
-  function(username, password, done) {
-    User.findOne({ Name: username }, function (err, user) {
+passport.use(new LocalStrategy({usernameField: 'username'}, (username, password, done) => {
+    User.findOne({ Name: username }, (err, user) => {
       if (err) { return done(err); }
 
       /* Return if user not found in database */
       if (!user) {
-        return done(null, false, {
-          message: 'User not found. Please contact the administrator.'
-        });
+        return done(null, false, {message: 'User not found. Please contact the administrator.'});
       }
 
       /* Return if password is wrong */
-      user.validPassword(password,function (result) {
+      user.validPassword(password, (result) => {
           if(!result)
-               return done(null, false, {
-                      message: 'Username/Password is wrong.'
-                    });
+               return done(null, false, {message: 'Username/Password is wrong.'});
           else
-              return done(null, user);
+            return done(null, user);
       });
-
     });
   }
 ));
