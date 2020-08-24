@@ -549,14 +549,16 @@ module.exports.distinctActiveApplications = (owner, callback) => {
 
     filterParams['$or'] = [{end_time: {$exists: false}}, {end_time: ""}, {end_time: 0}];
 
-    if (typeof owner !== 'undefined')
+    if (typeof owner !== 'undefined'){
         filterParams.owner = owner;
-
+    }
+        
     Job
     .distinct("ApplicationName", filterParams, {})
     .lean()
     .exec((err, apps) => {
-        return callback(apps);
+        callback(apps);
+        console.log("Output here -> ", apps);
     });
 };
 

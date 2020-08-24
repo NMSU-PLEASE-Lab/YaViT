@@ -3,7 +3,7 @@
  */
 const mongoose = require('mongoose');
 
-/*Promise is depreciated in recent monoogse versions so separate promise package is required */
+/*Promise is deprecated in recent monoogse versions so separate promise package is required */
 mongoose.Promise = require('bluebird');
 
 let gracefulShutdown;
@@ -11,8 +11,9 @@ let gracefulShutdown;
 const dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
 
 let mongoOptions = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+    useNewUrlParser: true, 
+    useUnifiedTopology: true ,
+    useCreateIndex: true 
 };
 
 // Connect to DB

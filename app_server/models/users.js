@@ -2,12 +2,13 @@
  * Model for 'user' collection
  */
 
-var mongoose = require('mongoose');
-var jwt = require('jsonwebtoken');
-var pam = require('authenticate-pam');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const pam = require('authenticate-pam');
+let Schema = mongoose.Schema;
 
 
-var userSchema = new mongoose.Schema({
+let userSchema = new Schema({
     Name: String,
     UserType: Number,
     UserTypeName: String

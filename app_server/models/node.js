@@ -3,9 +3,10 @@
  */
 
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 // var jwt = require('jsonwebtoken');
 
-let nodeSchema = new mongoose.Schema({
+let nodeSchema = new Schema({
     _id: Number,
     Name: String
 });

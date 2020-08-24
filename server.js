@@ -1,12 +1,10 @@
 // modules
 const express = require('express');
 const app = express();
-const favicon = require('serve-favicon');
 const server = require('http').createServer(app);
 const io = require('socket.io').listen(server);
-const bodyParser = require('body-parser');
 const morgan = require('morgan');
-// const passport = require('passport');
+const favicon = require('serve-favicon');
 
 // For development purposes only
 const SERVER_PORT = process.env.PORT || 5000; // set port
@@ -14,10 +12,10 @@ const SERVER_PORT = process.env.PORT || 5000; // set port
 // Root path
 rootPath = __dirname;
 
-app.use(bodyParser.json()); // parse application/json
-app.use(bodyParser.urlencoded({extended: true})); // parse application/x-www-form-urlencoded
+app.use(morgan('dev')); // log requests to console
+app.use(express.urlencoded({extended: true})); // parses incoming requests with URL-encoded payloads
+app.use(express.json()); // parses incoming requests with JSON payloads
 
-app.use(morgan('dev')); //log requests to console
 
 // set the static files location
 app.use(express.static(__dirname + '/app_client', {
@@ -40,13 +38,12 @@ require('./app_server/config/passport');
 // Bring in the routes for the API
 require('./app_server/routes/api')(app,io);
 
-
 //start app
 server.listen( app.listen(SERVER_PORT, (err) => {
-    if (err) {
-        console.log(err);
-    } else {
+    try {
         console.log("Listening on port " + SERVER_PORT);
+    } catch (error) {
+        console.log(err);
     }
 }));
 

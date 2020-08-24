@@ -8,9 +8,8 @@ import logging
 
 import sys
 
-logging.basicConfig(stream=sys.stderr,
-                    level=logging.DEBUG,
-                    )
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG);
+
 MONGO_DB_URL = 'mongodb://localhost:27017/'
 DATABASE_NAME = 'hpc_monitoring'
 EPOCH_BEGIN_DATETIME = datetime.fromtimestamp(0)
@@ -28,10 +27,12 @@ def processCollection(name, structure):
         try:
             childClient = MongoClient(MONGO_DB_URL)
             db = childClient[DATABASE_NAME]
+            
             mainCollection = db[name]
             minutelyCollection = db[name + '.minutely']
             hourlyCollection = db[name + '.hourly']
             dailyCollection = db[name + '.daily']
+            
             # Make sure these indexes exist for faster quering purposes
             minutelyCollection.create_index([('NodeId', pymongo.ASCENDING), ('Timestamp', pymongo.ASCENDING)],
                                             background=True,
@@ -89,7 +90,8 @@ def processCollection(name, structure):
 
             # filter query
             filter = {}
-            if minutelyLastTimestamp <> 0 and hourlyLastTimestamp <> 0 and dailyLastTimestamp <> 0:
+            # if minutelyLastTimestamp <> 0 and hourlyLastTimestamp <> 0 and dailyLastTimestamp <> 0:
+            if minutelyLastTimestamp < 0 or minutelyLastTimestamp > 0 and hourlyLastTimestamp < 0 or hourlyLastTimestamp > 0 and dailyLastTimestamp < 0 or dailyLastTimestamp > 0:
                 currentDateTimeTemp = datetime.now()
                 todayDate = datetime(currentDateTimeTemp.year, currentDateTimeTemp.month, currentDateTimeTemp.day)
                 if todayDate == minutelyLastTimestampDayValue or todayDate == (
@@ -129,7 +131,8 @@ def processCollection(name, structure):
                     # insert averageData to minutely collection
                     if runningMinute != currentMinute:
                         for node in minutelySum:
-                            if minutelyCount[node] <> 0:
+                            # if minutelyCount[node] <> 0:
+                            if minutelyCount[node] < 0 or minutelyCount[node] > 0:
                                 minuteDoc = {}
                                 minuteDoc['NodeId'] = node
                                 minuteDoc['Timestamp'] = unix_time_millis(currentMinute)
@@ -282,8 +285,7 @@ def jobMetricsChecker():
                 if document['start_time'] > 0:
                     # for each metric check if metrics data exists for current job
                     start_time_milli = document['start_time'] * 1000
-                    end_time_milli = document['end_time'] * 1000 if document[
-                                                                        'end_time'] <> 0 else 3165539199849  # millisecods for year 2070
+                    end_time_milli = document['end_time'] * 1000 if document['end_time'] < 0 or document['end_time'] > 0 else 3165539199849  # millisecods for year 2070
                     for metric in metricesNames:
                         if db[metric].find_one({'Timestamp': {'$gte': start_time_milli, '$lte': end_time_milli}}):
                             existingMetrics.append(metric)
@@ -362,7 +364,8 @@ def processSpapiOverview(schemaName):
                     continue
                 breakLoop = False
                 for job in db.job.find({'_id': jobMetric['Jobid']}):
-                    if not ('end_time' in job and job['end_time'] <> 0 and job['end_time'] <> ""):
+                    # if not ('end_time' in job and job['end_time'] <> 0 and job['end_time'] <> ""):
+                    if not ('end_time' in job and job['end_time'] < 0 or job['end_time'] > 0 and job['end_time'] < "" or job['end_time'] > ""):
                         breakLoop = True
                 if breakLoop:
                     break
