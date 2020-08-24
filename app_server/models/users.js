@@ -2,18 +2,16 @@
  * Model for 'user' collection
  */
 
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const pam = require('authenticate-pam');
-let Schema = mongoose.Schema;
-
+const mongoose  = require('mongoose');
+const jwt       = require('jsonwebtoken');
+const pam       = require('authenticate-pam');
+let Schema      = mongoose.Schema;
 
 let userSchema = new Schema({
     Name: String,
     UserType: Number,
     UserTypeName: String
 });
-
 
 /**
  * Check if password is valid through pam authentication

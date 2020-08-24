@@ -1,14 +1,15 @@
 /**
  *Controller for request relating to metrics like meminfo, vmstat, papi etc
  */
-const mongoose = require('mongoose');
+const mongoose  = require('mongoose');
+const db        = require('../models/db.js');
+const moment    = require('moment');
+const _         = require('underscore');
+let MongoClient = require('mongodb').MongoClient;
+let Schema      = mongoose.model('Schema', {}, 'schema');
+
 // const allMetricModels = [];
 // const cursor = require('../models/cursor');
-const db = require('../models/db.js');
-const moment = require('moment');
-const _ = require('underscore');
-let MongoClient = require('mongodb').MongoClient;
-let Schema = mongoose.model('Schema', {}, 'schema');
 
 /**
  * Fetch metrics schema from 'schema' collection

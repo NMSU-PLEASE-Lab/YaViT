@@ -1,9 +1,9 @@
 /**
  * Authentication Model For generating token
  */
-const passport = require('passport');
-const mongoose = require('mongoose');
-let User = mongoose.model('User');
+const passport  = require('passport');
+const mongoose  = require('mongoose');
+let User        = mongoose.model('User');
 
 let sendJSONresponse = (res, status, content) => {
   res.status(status);

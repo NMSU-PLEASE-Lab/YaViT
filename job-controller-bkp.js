@@ -1,16 +1,16 @@
 /**
- *Controller for request relating to job
+ *Controller for requests relating to job
  */
-const _         = require('underscore');
-const mongoose  = require('mongoose');
-const ctrlNode  = require('../controllers/node-controller');
-const moment    = require('moment');
-
+const _ = require('underscore');
+const mongoose = require('mongoose');
+const ctrlNode = require('../controllers/node-controller');
+const moment = require('moment');
 require("moment-duration-format");
 
-let Job         = mongoose.model('Job', {"_id": Number}, 'job');
-let NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
+let Job = mongoose.model('Job', {"_id": Number}, 'job');
+let NodeJob = mongoose.model('NodeJob', {}, 'node_job');
 let MongoClient = require('mongodb').MongoClient;
+
 
 /**
  * Get count of total jobs particular or all users
@@ -96,6 +96,7 @@ module.exports.getJobsNameCursored = (req, res) => {
     }
 
     if (typeof req.query.dateFrom !== 'undefined' && typeof req.query.dateTo !== 'undefined') {
+
         filterParams.queue_time = {
             $gte: parseInt(req.query.dateFrom),
             $lte: parseInt(req.query.dateTo)
@@ -107,24 +108,26 @@ module.exports.getJobsNameCursored = (req, res) => {
     Job
     .distinct("name", filterParams, {'name': -1})
     .exec( (err, jobs) => {
-
         if (err)
             return res.status(400).json({"message": err});
 
         let next = 0;
-        
+
         if (typeof req.query.nextId == 'undefined' || req.query.nextId == 0) {
-            if (jobs.length <= 100)
+            if (jobs.length <= 100){
                 next = -1;
-            else
+            } else {
                 next = 100;
+            }
+                
             return res.status(200).json({"nextId": next, "data": jobs.slice(0, 100)});
-        } else {
+        }
+        else {
             jobs = jobs.slice(req.query.nextId, req.query.nextId + 101);
 
-            if (jobs.length <= 100)
+            if (jobs.length <= 100){
                 next = -1;
-            else {
+            } else {
                 jobs = jobs.slice(0, 100);
                 next = req.query.nextId + 100;
             }
@@ -138,13 +141,14 @@ module.exports.getJobsNameCursored = (req, res) => {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobRunsByName = (req, res) => {
+module.exports.getJobRunsByName = (req, res) =>{
     let filterParams = {};
 
     filterParams.name = req.query.name;
 
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
+
     Job
     .find(filterParams, {
         "_id": 1,
@@ -156,7 +160,6 @@ module.exports.getJobRunsByName = (req, res) => {
     .exec((err, jobs) => {
         if (err)
             return res.status(400).json({"message": err});
-
         return res.status(200).json(jobs);
     });
 };
@@ -188,15 +191,16 @@ module.exports.getJobs = (req, res) => {
             req.body.searchColumn.forEach( entry => {
                 let obj = {};
 
-                if (entry == "_id")
+                if (entry == "_id"){
                     if (!isNaN(parseInt(req.body.search.value.trim()))) {
                         obj[entry] = parseInt(req.body.search.value.trim());
                         filterParams['$or'].push(obj);
-                    } else
+                    } else{
                         regex = new RegExp(req.body.search.value.trim(), "i");
-
+                    }
+                }
+                    
                 obj[entry] = regex;
-
                 filterParams['$or'].push(obj);
             });
         }
@@ -204,7 +208,7 @@ module.exports.getJobs = (req, res) => {
 
     let sortParams = {};
 
-    req.body.order.forEach( (entry) => {
+    req.body.order.forEach( entry => {
         sortParams[req.body.columns[entry.column].data] = entry.dir == 'desc' ? -1 : 1;
     });
 
@@ -229,9 +233,9 @@ module.exports.getJobs = (req, res) => {
     .skip(parseInt(req.body.start))
     .lean()
     .exec((err, jobs) => {
-
-        if (err)
-            return res.status(400).json({"message": err});
+        if (err) 
+            return res.status(400).json({"message": err });
+        
 
         NodeJob
         .find(
@@ -246,16 +250,15 @@ module.exports.getJobs = (req, res) => {
                 "JobNumber": 1
         })
         .lean()
-        .exec((err, nodeJob) => {
-
-            if (err)
-                return res.status(400).json({"message": err});
+        .exec((err, nodeJob) => {   
+            if (err) 
+                return res.status(400).json({"message": err });
+            
 
             for (let i = 0; i < jobs.length; i++) {
-                ( () => {
+                (() => {
                     const tmp_i = i;
-
-                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, (item) => {
+                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob,  item => {
                         return item.JobNumber == jobs[tmp_i]['_id'];
                     }).length;
                 })();
@@ -267,14 +270,17 @@ module.exports.getJobs = (req, res) => {
             }
 
             Job.count(filterParams, (err, count) => {
-                if (err)
-                    return res.status(400).json({"message": err});
+                if (err) {
+                    return res.status(400).json({"message": err });
+                }
 
                 let resp = {};
+
                 resp.draw = req.body.draw;
                 resp.recordsTotal = count;
                 resp.recordsFiltered = count;
                 resp.data = jobs;
+
                 return res.status(200).json(resp);
             });
         });
@@ -287,35 +293,35 @@ module.exports.getJobs = (req, res) => {
  * @param req - HTTP request
  * @param res - HTTP response
  */
-module.exports.getJobById = (req, res) => {
+module.exports.getJobById =  (req, res) => {
     let jobId = parseInt(req.query.jobId);
 
     Job
     .findOne({"_id": jobId})
     .lean()
-    .exec( (err, job) => {
-
-        if (err)
-            return res.status(400).json({"message": err});
+    .exec((err, job) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
 
         if (job == null)
             return res.status(400).json({"message": "No Job Found"});
-
+            
         NodeJob
         .find({"JobNumber": jobId})
         .distinct('NodeId')
         .exec( (err, nodes) => {
-            if (err)
-                return res.status(400).json({"message": err});
+            if (err) 
+                return res.status(400).json({"message": err });
 
-            ctrlNode.getNodesByIds(nodes, (nodesList) => {
-
+            ctrlNode.getNodesByIds(nodes, nodesList => {
                 job['nodes'] = nodesList;
 
                 if (typeof job['end_time'] !== 'undefined' && job['end_time'] !== 0)
                     job['duration'] = moment.duration(moment.unix(job['end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
                 else
                     job['duration'] = "";
+
                 if (typeof job['job_quality'] === 'undefined')
                     job['job_quality'] = 5;
 
@@ -357,16 +363,16 @@ module.exports.getActiveJobs = (req, res) => {
     })
     .sort({"_id": -1})
     .lean()
-    .exec( (err, jobs) => {
+    .exec((err, jobs) => {
+        if (err) 
+            return res.status(400).json({"message": err });
+        
 
-        if (err)
-            return res.status(400).json({"message": err});
-
-        for(let i=0; i<jobs.length; i++) {
-            if(typeof(jobs[i].predicted_end_time) === 'undefined')
-                    jobs[i].percentCompleted = -1;
-            else
-                jobs[i].percentCompleted = ((moment().unix() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
+        for( let i=0; i < jobs.length; i++ ){
+           if(typeof(jobs[i].predicted_end_time) === 'undefined')
+                jobs[i].percentCompleted = -1;
+           else
+               jobs[i].percentCompleted = ((moment().unix() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
         }
 
         return res.status(200).json(jobs);
@@ -380,7 +386,7 @@ module.exports.getActiveJobs = (req, res) => {
  */
 module.exports.getRecentJobs = (req, res) => {
     let filterParams = {};
-
+    
     filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}, {end_time: {$ne: 0}}];
 
     if (typeof req.query.owner !== 'undefined')
@@ -403,33 +409,33 @@ module.exports.getRecentJobs = (req, res) => {
     .limit(10)
     .lean()
     .exec((err, jobs) => {
-        if (err)
-            return res.status(400).json({"message": err});
-
+        if (err) 
+            return res.status(400).json({"message": err });
+        
+            
         NodeJob
-        .find(
-            {
-                "JobNumber": {
-                    "$in": _.pluck(jobs, '_id')
-                }
-            }, {
-                "_id": -1,
-                "NodeId": 1,
-                "JobNumber": 1
+        .find({
+            "JobNumber": {
+                "$in": _.pluck(jobs, '_id')
+            }
+        }, {
+            "_id": -1,
+            "NodeId": 1,
+            "JobNumber": 1
         })
         .lean()
         .exec((err, nodeJob) => {
-            if (err)
+            if (err) {
                 return res.status(400).json({"message": err });
+            }
 
             for (let i = 0; i < jobs.length; i++) {
-                ( () => {
+                (() => {
                     const tmp_i = i;
-                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, (item) => {
+                    jobs[tmp_i]['numberOfNodes'] = _.filter(nodeJob, item => {
                         return item.JobNumber == jobs[tmp_i]['_id'];
                     }).length;
                 })();
-
                 jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
             }
 
@@ -445,10 +451,11 @@ module.exports.getRecentJobs = (req, res) => {
  * @param callback - callback function
  */
 module.exports.getJobsByAppNameAndUser = (appnames, user, callback) => {
+
     Job
     .find({"ApplicationName": {"$in": appnames}, "owner": user}, {"_id": -1, "ApplicationName": 1})
     .lean()
-    .exec( (err, jobs) => {
+    .exec((err, jobs) => {
         return callback(jobs);
     });
 };
@@ -462,15 +469,27 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
     let filterParams = {};
 
     filterParams['$and'] = [
-        {owner: req.query.owner}, 
-        {ApplicationName: req.query.app_name},
-        {end_time: {$exists: true}}, 
-        {end_time: {$ne: ""}}, 
-        {end_time: {$ne: 0}}
+        {
+            owner: req.query.owner
+        }, 
+        {
+            ApplicationName: req.query.app_name
+        },
+        {
+            end_time: {$exists: true}
+        }, 
+        {
+            end_time: {$ne: ""}
+        }, 
+        {
+            end_time: {$ne: 0}
+        }
     ];
 
     Job.aggregate([
-        {$match: filterParams},
+        {
+            $match: filterParams
+        },
         {
             $project: {
                 job_size: 1,
@@ -490,14 +509,15 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
                 Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
                 Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
                 NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
-
             }
         },
+        {
+            $sort: {_id: 1}
+        }
+    ]).exec((err, data) => {
+        let resp = {},
+            conf = 0;
 
-        {$sort: {_id: 1}}
-
-    ]).exec( (err, data) => {
-        let resp = {};
         resp['Configuration'] = [];
         resp['Quality'] = {};
         resp['Runtime'] = [];
@@ -513,9 +533,7 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
         resp['Configuration']['MaxJobSize'] = [];
         resp['Configuration']['NodeRequest'] = [];
 
-        let conf = 0;
-
-        data.forEach( (item) => {
+        data.forEach((item) => {
             conf++;
             resp['Quality']['Healthy'].push(item.Healthy);
             resp['Quality']['Abnormal'].push(item.Abnormal);
@@ -526,6 +544,7 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
             resp['Runtime'].push(Math.round(item.Runtime * 100) / 100);
 
             let confObject = {};
+
             confObject.Name = "C" + conf;
             confObject.MinJobSize = item.MinJobSize;
             confObject.MaxJobSize = item.MaxJobSize;
@@ -549,16 +568,14 @@ module.exports.distinctActiveApplications = (owner, callback) => {
 
     filterParams['$or'] = [{end_time: {$exists: false}}, {end_time: ""}, {end_time: 0}];
 
-    if (typeof owner !== 'undefined'){
+    if (typeof owner !== 'undefined')
         filterParams.owner = owner;
-    }
-        
+
     Job
     .distinct("ApplicationName", filterParams, {})
     .lean()
-    .exec((err, apps) => {
-        callback(apps);
-        console.log("Output here -> ", apps);
+    .exec( (err, apps) => {
+        return callback(apps);
     });
 };
 
@@ -601,7 +618,7 @@ module.exports.getAvgSuccessRateByApplication = (owner, callback) => {
             }
         },
         {$sort: {Name: 1}}
-    ]).exec( (err, apps) => {
+    ]).exec((err, apps) => {
         return callback(apps)
     });
 };
@@ -614,6 +631,7 @@ module.exports.getAvgSuccessRateByApplication = (owner, callback) => {
  */
 module.exports.averageRuntimeByApplication = (owner, callback) => {
     let filterParams = {};
+
     if (typeof owner !== 'undefined')
         filterParams.owner = owner;
 
@@ -640,8 +658,10 @@ module.exports.averageRuntimeByApplication = (owner, callback) => {
                 AverageRunTime: {$divide: ["$runTime", "$count"]}
             }
         },
-        {$sort: {Name: 1}}
-    ]).exec( (err, apps) => {
+        {
+            $sort: {Name: 1}
+        }
+    ]).exec((err, apps) => {
         return callback(apps)
     });
 };
@@ -657,15 +677,12 @@ module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
         filterParams.owner = req.query.owner;
 
     MongoClient.connect(db.dbURI, (err, db) => {
-        db.collection('job')
-        .find(filterParams, {
+        db.collection('job').find(filterParams, {
             "_id": 1,
             "ApplicationName": 1
-        })
-        .forEach( (job) => {
+        }).forEach((job) => {
             job.numberOfNodes = db.collection('node_job').count({"JobNumber": job._id})
-        })
-        .toArray( (err, data) => {
+        }).toArray((err, data) => {
 
         });
     });
@@ -678,11 +695,16 @@ module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
  */
 module.exports.runQualityByApplication = (owner, callback) => {
     let filterParams = {};
-    if (typeof owner !== 'undefined')
+
+    if (typeof owner !== 'undefined'){
         filterParams.owner = owner;
+    }
+        
     // filterParams['$and'] = [{end_time: {$exists: true}}, {end_time: {$ne: ""}}];
     Job.aggregate([
-        {$match: filterParams},
+        {
+            $match: filterParams
+        }, 
         {
             $group: {
                 _id: "$ApplicationName",
@@ -691,16 +713,12 @@ module.exports.runQualityByApplication = (owner, callback) => {
                 Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
                 Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
                 NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
-
-
             }
         },
-
-        {$sort: {_id: 1}}
-
+        {
+            $sort: {_id: 1}
+        }
     ]).exec((err, apps) => {
-        return callback(apps)
+        return callback(apps);
     });
-
 };
-

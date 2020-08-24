@@ -3,8 +3,8 @@
  */
 
 /*Modules*/
-const express = require('express');
-const jwt = require('express-jwt');
+// const express = require('express');
+// const jwt = require('express-jwt');
 
 // var router = express.Router();
 
@@ -14,13 +14,13 @@ const jwt = require('express-jwt');
 // });
 
 /* App Controllers*/
-const ctrlProfile = require('../controllers/user-controller');
-const ctrlAuth = require('../controllers/authentication');
-const ctrlNode = require('../controllers/node-controller');
-const ctrlMetrics = require('../controllers/metrics-controller');
-const ctrlJob = require('../controllers/job-controller');
-const ctrlApp = require('../controllers/app-controller');
-const ctrlEvent = require('../controllers/events-controller');
+const ctrlProfile   = require('../controllers/user-controller');
+const ctrlAuth      = require('../controllers/authentication');
+const ctrlNode      = require('../controllers/node-controller');
+const ctrlMetrics   = require('../controllers/metrics-controller');
+const ctrlJob       = require('../controllers/job-controller');
+const ctrlApp       = require('../controllers/app-controller');
+const ctrlEvent     = require('../controllers/events-controller');
 
 module.exports = (app, io) => {
 

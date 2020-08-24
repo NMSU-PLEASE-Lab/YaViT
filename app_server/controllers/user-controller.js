@@ -1,9 +1,9 @@
 /**
  * Controller for 'user' and related requests
  */
-const mongoose = require('mongoose');
-const User = mongoose.model('User');
-let userTypes = {1: "Admin", 2: "User"};
+const mongoose  = require('mongoose');
+const User      = mongoose.model('User');
+let userTypes   = {1: "Admin", 2: "User"};
 
 /**
  * Get user information by id

@@ -1,10 +1,10 @@
 /**
  * Controller for handling all 'events' requests
  */
-const mongoose = require('mongoose');
-const cursor = require('../models/cursor');
-const _ = require('underscore');
-let appevent = mongoose.model('appevent', {}, 'appevent');
+const mongoose  = require('mongoose');
+const cursor    = require('../models/cursor');
+const _         = require('underscore');
+let appevent    = mongoose.model('appevent', {}, 'appevent');
 
 /**
  * Get events metadata for a job (id, first and last position) in Advance
