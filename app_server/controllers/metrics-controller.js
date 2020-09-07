@@ -8,6 +8,8 @@ const _         = require('underscore');
 let MongoClient = require('mongodb').MongoClient;
 let Schema      = mongoose.model('Schema', {}, 'schema');
 
+console.log(db);
+
 // const allMetricModels = [];
 // const cursor = require('../models/cursor');
 

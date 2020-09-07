@@ -5,12 +5,13 @@ const _         = require('underscore');
 const mongoose  = require('mongoose');
 const ctrlNode  = require('../controllers/node-controller');
 const moment    = require('moment');
+const db =      require('../models/db');
 
 require("moment-duration-format");
 
-let Job         = mongoose.model('Job', {"_id": Number}, 'job');
-let NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
-let MongoClient = require('mongodb').MongoClient;
+const Job         = mongoose.model('Job', {"_id": Number}, 'job');
+const NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
+const MongoClient = require('mongodb').MongoClient;
 
 /**
  * Get count of total jobs particular or all users
@@ -27,7 +28,7 @@ module.exports.jobsCount = (req, res) => {
         filterParams.ApplicationName = req.query.app_name;
 
     Job
-    .count(filterParams, (err, count) => {
+    .countDocuments(filterParams, (err, count) => {
         if (err)
             return res.status(400).json({"message": err});
 
@@ -266,7 +267,7 @@ module.exports.getJobs = (req, res) => {
                     jobs[i].metrices = "";
             }
 
-            Job.count(filterParams, (err, count) => {
+            Job.countDocuments(filterParams, (err, count) => {
                 if (err)
                     return res.status(400).json({"message": err});
 
@@ -553,12 +554,21 @@ module.exports.distinctActiveApplications = (owner, callback) => {
         filterParams.owner = owner;
     }
         
-    Job
-    .distinct("ApplicationName", filterParams, {})
+    // Job
+    // .distinct("ApplicationName", filterParams, {})
+    // .lean()
+    // .exec((err, apps) => {
+    //     callback(apps);
+    //     console.log("Output here -> ", apps);
+    // });
+
+    let queryDistinct = Job.distinct("ApplicationName", filterParams);
+
+    queryDistinct
     .lean()
-    .exec((err, apps) => {
-        callback(apps);
-        console.log("Output here -> ", apps);
+    .exec((err, app) => {
+        if(!err)
+            callback(app);
     });
 };
 
@@ -656,7 +666,7 @@ module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
 
-    MongoClient.connect(db.dbURI, (err, db) => {
+    MongoClient.connect(db.URI, (err, db) => {
         db.collection('job')
         .find(filterParams, {
             "_id": 1,

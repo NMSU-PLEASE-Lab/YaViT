@@ -7,9 +7,7 @@ const Schema    = mongoose.model('Schema', {}, 'schema');
 let allMetricModels = [];
 
 Schema
-.find({
-    'type': 'metrics'
-})
+.find({'type': 'metrics'})
 .exec((err, metrics) => {
     if (!err) {
         for (let i = 0; i < metrics.length; i++) {
