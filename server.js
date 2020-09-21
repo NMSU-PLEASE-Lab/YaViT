@@ -1,10 +1,11 @@
 // modules
 const express   = require('express');
 const app       = express();
-const http    = require('http').createServer(app);
+const http      = require('http').createServer(app);
 const io        = require('socket.io')(http);
 const morgan    = require('morgan');
 const favicon   = require('serve-favicon');
+const ingestor  = require('./app_server/ingestor');
 
 // For development purposes only
 const SERVER_PORT = 5000; // set port
@@ -50,6 +51,10 @@ require('./app_server/config/passport');
 
 // Bring in the routes for the API
 require('./app_server/routes/api')(app, io);
+
+// console.log(ingestor.watchQueue());
+// console.log(ingestor.injest());
+ingestor.injest();
 
 // expose app
 exports = module.exports = app;

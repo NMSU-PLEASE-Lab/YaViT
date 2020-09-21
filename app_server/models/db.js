@@ -15,18 +15,7 @@ let mongoOptions = {
     useCreateIndex: true 
 };
 
-// (async () => {
-//     try {
-//         await mongoose.connect(dbURI, mongoOptions);
-//     } catch (error) {
-//         // handleError(error);
-//         console.log('Mongoose connection error: ' + error)
-//     }
-// })();
-
-
-
-// // Connect to DB
+// Connect to DB
 mongoose.connect(dbURI, mongoOptions);
 
 // Connection Events
