@@ -33,7 +33,8 @@ module.exports.addUser = (req, res) => {
     let newUser = new User({
         Name: req.body.Name,
         UserType: req.body.UserTypeOption.value,
-        UserTypeName: userTypes[req.body.UserTypeOption.value]
+        UserTypeName: userTypes[req.body.UserTypeOption.value],
+        Ingested: false
     });
 
     User.find({"Name": req.body.Name}).exec( (err, user) => {

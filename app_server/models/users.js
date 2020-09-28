@@ -10,7 +10,8 @@ let Schema      = mongoose.Schema;
 let userSchema = new Schema({
     Name: String,
     UserType: Number,
-    UserTypeName: String
+    UserTypeName: String,
+    Ingested: Boolean
 });
 
 /**
@@ -43,4 +44,6 @@ userSchema.methods.generateJwt = function () {
     }, "MY_SECRET");
 };
 
-mongoose.model('User', userSchema, 'user');
+// mongoose.model('User', userSchema, 'user');
+
+module.exports = mongoose.model('User', userSchema, 'user');

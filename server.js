@@ -47,14 +47,13 @@ http.listen(SERVER_PORT, (err) => {
 require('./app_server/models/db');
 
 // Bring in the Passport app_config after model is defined
-require('./app_server/config/passport');
+require('./app_server/lib/passport');
 
 // Bring in the routes for the API
 require('./app_server/routes/api')(app, io);
 
-// console.log(ingestor.watchQueue());
-// console.log(ingestor.injest());
-ingestor.injest();
+// Ingest SLURM info to DB
+ingestor.init();
 
 // expose app
 exports = module.exports = app;

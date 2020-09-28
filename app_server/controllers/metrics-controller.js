@@ -1,17 +1,15 @@
 /**
  *Controller for request relating to metrics like meminfo, vmstat, papi etc
  */
-const mongoose  = require('mongoose');
-const db        = require('../models/db.js');
-const moment    = require('moment');
-const _         = require('underscore');
-let MongoClient = require('mongodb').MongoClient;
-let Schema      = mongoose.model('Schema', {}, 'schema');
+const mongoose = require('mongoose');
+const MongoClient = require('mongodb').MongoClient;
+const Schema = mongoose.model('Schema', {}, 'schema');
+const allMetricModels = [];
+const cursor = require('../models/cursor');
+const database = require('../models/db.js');
+const moment = require('moment');
+const _ = require('underscore');
 
-console.log(db);
-
-// const allMetricModels = [];
-// const cursor = require('../models/cursor');
 
 /**
  * Fetch metrics schema from 'schema' collection
@@ -20,12 +18,10 @@ console.log(db);
  */
 module.exports.getMetricsSchema = (req, res) => {
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
-        db
-        .collection('schema')
-        .find({
-            'type': 'metrics'
-        })
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, function (err, client) {
+        const db = client.db('hpc_monitoring');
+        db.collection('schema')
+        .find({'type': 'metrics'})
         .toArray((err, metrics) => {
             if (!err) {
 
@@ -42,8 +38,14 @@ module.exports.getMetricsSchema = (req, res) => {
                         .sort({"Timestamp": 1})
                         .limit(1)
                         .toArray( (err, data) => {
-                            if (!err)
-                                metrics[i]['MinTime'] = data[0].Timestamp;
+                            if (!err){
+                                if( data.length ){
+                                    metrics[i]['MinTime'] = data[0].Timestamp;
+                                } else {
+                                    return res.status(400).json({"message": err});
+                                }
+                            }
+                            
                             finished();
                         });
                     }(i, metrics[i]['name']));
@@ -67,9 +69,11 @@ module.exports.getMetricsData = (req, res) => {
 
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, (err, client) => {
         if (err)
             return res.status(400).json({"message": err});
+
+        const db = client.db('hpc_monitoring');
 
         let filterObj = {};
 
@@ -141,7 +145,8 @@ module.exports.getMetricsData = (req, res) => {
  */
 module.exports.getJobMetricsSchema = (req, res) => {
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, (err, client) => {
+        const db = client.db('hpc_monitoring');
         db.collection('dynamic_schema')
         .find({
             '$and': [{'Jobid': parseInt(req.query.jobId)}]
@@ -167,7 +172,7 @@ module.exports.getJobMetricsData = (req, res) => {
 
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, (err, client) => {
         if (err)
             return res.status(400).json({"message": err});
 
@@ -187,6 +192,8 @@ module.exports.getJobMetricsData = (req, res) => {
         let timeDiff = toTime - fromTime;
         let metricCollection;
         let rawData = true;
+
+        const db = client.db('hpc_monitoring');
 
         //if greater than 12 hours display hourly average
         if (timeDiff > 43200000) {
@@ -246,9 +253,11 @@ module.exports.getJobMetricsData = (req, res) => {
 module.exports.getProcessIds = (req, res) => {
 
     /* Mongoclient was used because dynamic collection name throwed error in moongoose */
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, (err, client) => {
         if (err)
             return res.status(400).json({ "message": err});
+
+        const db = client.db('hpc_monitoring');
 
         let metricCollection = db.collection(req.query.type + ".hourly");
 
@@ -298,7 +307,8 @@ module.exports.getSpapiOverview = (req, res) => {
     if (typeof req.query.jobId !== 'undefined' && req.query.jobId !== '')
         filterParams["_id.Jobid"] = parseInt(req.query.jobId);
 
-    MongoClient.connect(db.dbURI, {}, (err, db) => {
+    MongoClient.connect(database.dbURI, { useUnifiedTopology: true }, (err, client) => {
+        const db = client.db('hpc_monitoring');
         db
         .collection('spapi.overview')
         .find(filterParams, {})

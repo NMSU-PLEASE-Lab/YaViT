@@ -26,6 +26,7 @@ module.exports = (app, io) => {
 
     // On default server root server index file
     app.get('/', (req, res) => {
+        console.log('Valentine')
         res.sendFile(rootPath + '/app_client/index.html');
     });
 

@@ -34,7 +34,7 @@ angular.module('hpcMonitoringApp')
                             $scope.allUsers = response.data.data;
                             callback(response.data);
                         }).catch(function (err) {
-                            console.log(err);
+                            // console.log(err);
                         });
                     })
                     .withDataProp('data')

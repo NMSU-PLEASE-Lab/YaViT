@@ -4,11 +4,13 @@
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-// var jwt = require('jsonwebtoken');
 
 let nodeSchema = new Schema({
     _id: Number,
     Name: String
+},
+{
+    versionKey: false // You should be aware of the outcome after set to false
 });
 
-mongoose.model('Node', nodeSchema, 'node');
+module.exports = mongoose.model('Node', nodeSchema, 'node');

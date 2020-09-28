@@ -2,7 +2,8 @@
  * Controller for 'node' collection
  */
 const mongoose = require('mongoose');
-const Node = mongoose.model('Node', {"_id": Number}, 'node');
+const Node = require('../models/node');
+// const Node = mongoose.model('Node', {"_id": Number}, 'node');
 
 
 /**

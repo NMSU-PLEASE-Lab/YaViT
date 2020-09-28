@@ -5,11 +5,11 @@ const _         = require('underscore');
 const mongoose  = require('mongoose');
 const ctrlNode  = require('../controllers/node-controller');
 const moment    = require('moment');
-const db =      require('../models/db');
+const db        = require('../models/db');
+const Job       = require('../models/job');
 
 require("moment-duration-format");
 
-const Job         = mongoose.model('Job', {"_id": Number}, 'job');
 const NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
 const MongoClient = require('mongodb').MongoClient;
 
@@ -276,6 +276,7 @@ module.exports.getJobs = (req, res) => {
                 resp.recordsTotal = count;
                 resp.recordsFiltered = count;
                 resp.data = jobs;
+                console.log('Jobs------', resp);
                 return res.status(200).json(resp);
             });
         });
@@ -544,6 +545,7 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
  * get distinct application names
  * @param owner  - username
  * @param callback - callback function
+ * @TODO
  */
 module.exports.distinctActiveApplications = (owner, callback) => {
     let filterParams = {};
@@ -554,22 +556,22 @@ module.exports.distinctActiveApplications = (owner, callback) => {
         filterParams.owner = owner;
     }
         
-    // Job
-    // .distinct("ApplicationName", filterParams, {})
-    // .lean()
-    // .exec((err, apps) => {
-    //     callback(apps);
-    //     console.log("Output here -> ", apps);
-    // });
-
-    let queryDistinct = Job.distinct("ApplicationName", filterParams);
-
-    queryDistinct
+    Job
+    .distinct("ApplicationName", filterParams, {})
     .lean()
-    .exec((err, app) => {
-        if(!err)
-            callback(app);
+    .exec((err, apps) => {
+        callback(apps);
+        console.log("Output here -> ", apps);
     });
+
+    // let queryDistinct = Job.distinct("ApplicationName", filterParams);
+
+    // queryDistinct
+    // .lean()
+    // .exec((err, app) => {
+    //     if(!err)
+    //         callback(app);
+    // });
 };
 
 /**
@@ -673,7 +675,7 @@ module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
             "ApplicationName": 1
         })
         .forEach( (job) => {
-            job.numberOfNodes = db.collection('node_job').count({"JobNumber": job._id})
+            job.numberOfNodes = db.collection('node_job').countDocuments({"JobNumber": job._id})
         })
         .toArray( (err, data) => {
 
@@ -701,8 +703,6 @@ module.exports.runQualityByApplication = (owner, callback) => {
                 Critical: {$sum: {$cond: [{$eq: ["$job_quality", 3]}, 1, 0]}},
                 Failed: {$sum: {$cond: [{$eq: ["$job_quality", 4]}, 1, 0]}},
                 NoQuality: {$sum: {$cond: [{$or: [{$eq: ["$job_quality", 5]}, {"$ifNull": ["$job_quality", true]}]}, 1, 0]}}
-
-
             }
         },
 
