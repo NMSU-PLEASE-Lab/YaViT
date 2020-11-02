@@ -149,7 +149,7 @@ module.exports.getAllUsers = (req, res) => {
         if (err)
             return res.status(400).json({"message": err});
 
-        User.count(filterParams, (err, count) => {
+        User.countDocuments(filterParams, (err, count) => {
             if (err)
                 return res.status(400).json({"message": err});
 

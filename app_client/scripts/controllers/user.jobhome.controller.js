@@ -143,8 +143,10 @@ angular.module('hpcMonitoringApp')
                     }).withTitle('Job Number'),
                     DTColumnBuilder.newColumn('name').withTitle('Job Name'),
                     DTColumnBuilder.newColumn('start_time').renderWith(function (data, type, full) {
+                        console.log(data);
                         if (typeof data !== 'undefined' && data !== '')
-                            return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            return moment(data).format("YYYY-MM-DD hh:mm:ss");
                         else
                             return '';
                     }).withTitle('Start Time'),
@@ -160,7 +162,9 @@ angular.module('hpcMonitoringApp')
                 ];
 
                 $scope.unixToJsTime = function ($unixTime) {
-                    return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    // return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    // Modified line below to exclude .unix method which wrongly formats the timestamp
+                    return moment($unixTime).format("YYYY-MM-DD hh:mm:ss");
                 };
                 /* Count of Jobs */
                 getJobsCount();

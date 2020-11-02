@@ -77,47 +77,32 @@ angular.module('hpcMonitoringApp')
                         case 5:
                         case 6:
                             return moment($scope.serverTime).unix();
-                            break;
                         case 7:
                             return 0;
-                            break;
                         case 8:
                             return moment(moment($scope.toDate.date).format("YYYY-MM-DD") + " " + $scope.toDate.hour + ":" + $scope.toDate.min + ":" + $scope.toDate.sec, "YYYY-MM-DD h:m:s").unix();
-                            break;
-
                     }
-
                 };
 
                 $scope.getDateFrom = function () {
                     switch ($scope.selectedIndexGlobalTimeFilter) {
                         case 1:
                             return moment($scope.serverTime).subtract(1, 'hours').unix();
-                            break;
                         case 2:
                             return moment($scope.serverTime).subtract(1, 'days').unix();
-                            break;
                         case 3:
                             return moment($scope.serverTime).subtract(7, 'days').unix();
-                            break;
                         case 4:
                             return moment($scope.serverTime).subtract(1, 'months').unix();
-                            break;
                         case 5:
                             return moment($scope.serverTime).subtract(3, 'months').unix();
-                            break;
                         case 6:
                             return moment($scope.serverTime).subtract(6, 'months').unix();
-                            break;
                         case 7:
                             return 0;
-                            break;
                         case 8:
                             return moment(moment($scope.fromDate.date).format("YYYY-MM-DD") + " " + $scope.fromDate.hour + ":" + $scope.fromDate.min + ":" + $scope.fromDate.sec, "YYYY-MM-DD h:m:s").unix();
-                            break;
-
                     }
-
                 };
 
                 /* Angular Data table vars and methods for Jobs */
@@ -167,11 +152,13 @@ angular.module('hpcMonitoringApp')
                     DTColumnBuilder.newColumn('owner').withTitle('Owner').notVisible(),
                     DTColumnBuilder.newColumn('queue_time')
                         .renderWith(function (data, type, full) {
-                            return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            return moment(data).format("YYYY-MM-DD hh:mm:ss");
+                            // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
                         }).withTitle('Submitted Date'),
                     DTColumnBuilder.newColumn('start_time').renderWith(function (data, type, full) {
                         if (typeof data !== 'undefined' && data !== '')
-                            return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            return moment(data).format("YYYY-MM-DD hh:mm:ss");
+                            // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
                         else
                             return '';
                     }).withTitle('Start Date'),
@@ -237,7 +224,8 @@ angular.module('hpcMonitoringApp')
                 };
 
                 $scope.unixToJsTime = function ($unixTime) {
-                    return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    // return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    return moment($unixTime).format("YYYY-MM-DD hh:mm:ss");
                 };
 
                 /**

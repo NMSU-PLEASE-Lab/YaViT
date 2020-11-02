@@ -177,10 +177,12 @@ angular.module('hpcMonitoringApp')
                     DTColumnBuilder.newColumn('owner').withTitle('Owner'),
                     DTColumnBuilder.newColumn('queue_time')
                         .renderWith(function (data, type, full) {
-                            return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            return moment(data).format("YYYY-MM-DD hh:mm:ss");
                         }).withTitle('Submitted Date'),
                     DTColumnBuilder.newColumn('start_time').renderWith(function (data, type, full) {
-                        return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                        // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                        return moment(data).format("YYYY-MM-DD hh:mm:ss");
                     }).withTitle('Start Date'),
                     DTColumnBuilder.newColumn('duration').withTitle('Duration'),
                     DTColumnBuilder.newColumn('numberOfNodes').withTitle('Nodes Used'),
@@ -216,7 +218,8 @@ angular.module('hpcMonitoringApp')
                 };
 
                 $scope.unixToJsTime = function ($unixTime) {
-                    return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    // return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    return moment($unixTime).format("YYYY-MM-DD hh:mm:ss");
                 };
 
                 function initialiseDtOptions() {

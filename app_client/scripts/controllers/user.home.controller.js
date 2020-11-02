@@ -121,7 +121,8 @@ angular.module('hpcMonitoringApp')
                     DTColumnBuilder.newColumn('name').withTitle('Job Name'),
                     DTColumnBuilder.newColumn('start_time').renderWith(function (data, type, full) {
                         if (typeof data !== 'undefined' && data !== '')
-                            return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
+                            return moment(data).format("YYYY-MM-DD hh:mm:ss");
+                            // return moment.unix(data).format("YYYY-MM-DD hh:mm:ss");
                         else
                             return '';
                     }).withTitle('Start Time'),
@@ -137,7 +138,8 @@ angular.module('hpcMonitoringApp')
                 ];
 
                 $scope.unixToJsTime = function ($unixTime) {
-                    return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    // return moment.unix($unixTime).format("YYYY-MM-DD hh:mm:ss");
+                    return moment($unixTime).format("YYYY-MM-DD hh:mm:ss");
                 };
 
                 refreshAllData();

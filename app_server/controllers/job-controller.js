@@ -7,10 +7,11 @@ const ctrlNode  = require('../controllers/node-controller');
 const moment    = require('moment');
 const db        = require('../models/db');
 const Job       = require('../models/job');
+const NodeJob   = require('../models/nodejob');
 
 require("moment-duration-format");
 
-const NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
+// const NodeJob     = mongoose.model('NodeJob', {}, 'node_job');
 const MongoClient = require('mongodb').MongoClient;
 
 /**
@@ -171,7 +172,7 @@ module.exports.getJobs = (req, res) => {
     let filterParams = {};
 
     if (req.body.dateFrom !== 0 && req.body.dateTo !== 0)
-        filterParams.queue_time = {$gte: parseInt(req.body.dateFrom), $lte: parseInt(req.body.dateTo)};
+        // filterParams.queue_time = {$gte: parseInt(req.body.dateFrom), $lte: parseInt(req.body.dateTo)};
 
     if (typeof req.body.app_name !== 'undefined' && req.body.app_name !== '')
         filterParams.ApplicationName = req.body.app_name;
@@ -209,6 +210,8 @@ module.exports.getJobs = (req, res) => {
         sortParams[req.body.columns[entry.column].data] = entry.dir == 'desc' ? -1 : 1;
     });
 
+    console.log('filterParams------', sortParams);
+
     Job
     .find(filterParams, {
         "_id": 1,
@@ -234,6 +237,9 @@ module.exports.getJobs = (req, res) => {
         if (err)
             return res.status(400).json({"message": err});
 
+        console.log('Error------', err);
+        console.log('Jobs------', jobs);
+
         NodeJob
         .find(
             {
@@ -245,7 +251,8 @@ module.exports.getJobs = (req, res) => {
                 "_id": -1,
                 "NodeId": 1,
                 "JobNumber": 1
-        })
+            }
+        )
         .lean()
         .exec((err, nodeJob) => {
 
@@ -261,7 +268,9 @@ module.exports.getJobs = (req, res) => {
                     }).length;
                 })();
 
-                jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
+                // jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
+                // Modified line below to exclude .unix method which wrongly formats the timestamp
+                jobs[i]['duration'] = moment.duration(moment(jobs[i]['end_time']).diff(moment(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
 
                 if (typeof jobs[i].metrices == 'undefined')
                     jobs[i].metrices = "";
@@ -315,7 +324,9 @@ module.exports.getJobById = (req, res) => {
                 job['nodes'] = nodesList;
 
                 if (typeof job['end_time'] !== 'undefined' && job['end_time'] !== 0)
-                    job['duration'] = moment.duration(moment.unix(job['end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
+                    // job['duration'] = moment.duration(moment.unix(job['end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
+                    // Modified line below to exclude .unix method which wrongly formats the timestamp
+                    job['duration'] = moment.duration(moment(job['end_time']).diff(moment(job['start_time']))).format("hh:mm:ss", {trim: false});
                 else
                     job['duration'] = "";
                 if (typeof job['job_quality'] === 'undefined')
@@ -324,7 +335,9 @@ module.exports.getJobById = (req, res) => {
                 if (typeof job['predicted_end_time'] === 'undefined')
                     job['predicted_duration'] = "Unknown";
                 else
-                    job['predicted_duration'] = moment.duration(moment.unix(job['predicted_end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
+                    // job['predicted_duration'] = moment.duration(moment.unix(job['predicted_end_time']).diff(moment.unix(job['start_time']))).format("hh:mm:ss", {trim: false});
+                    // Modified line below to exclude .unix method which wrongly formats the timestamp
+                    job['predicted_duration'] = moment.duration(moment(job['predicted_end_time']).diff(moment(job['start_time']))).format("hh:mm:ss", {trim: false});
 
                 return res.status(200).json(job);
             });
@@ -368,7 +381,9 @@ module.exports.getActiveJobs = (req, res) => {
             if(typeof(jobs[i].predicted_end_time) === 'undefined')
                     jobs[i].percentCompleted = -1;
             else
-                jobs[i].percentCompleted = ((moment().unix() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
+                // jobs[i].percentCompleted = ((moment().unix() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
+                // Modified line below to exclude .unix method which wrongly formats the timestamp
+                jobs[i].percentCompleted = ((moment() - jobs[i].start_time) * 100 / (jobs[i].predicted_end_time - jobs[i].start_time)).toFixed(1);
         }
 
         return res.status(200).json(jobs);
@@ -424,6 +439,7 @@ module.exports.getRecentJobs = (req, res) => {
             if (err)
                 return res.status(400).json({"message": err });
 
+                // console.log(jobs);
             for (let i = 0; i < jobs.length; i++) {
                 ( () => {
                     const tmp_i = i;
@@ -432,8 +448,12 @@ module.exports.getRecentJobs = (req, res) => {
                     }).length;
                 })();
 
-                jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
+                // jobs[i]['duration'] = moment.duration(moment.unix(jobs[i]['end_time']).diff(moment.unix(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
+                // Modified line below to exclude .unix method which wrongly formats the timestamp
+                jobs[i]['duration'] = moment.duration(moment(jobs[i]['end_time']).diff(moment(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
             }
+
+            // console.log(jobs);
 
             return res.status(200).json(jobs);
         });
@@ -550,28 +570,30 @@ module.exports.runQualityAndRuntimeByConfiguration = (req, res) => {
 module.exports.distinctActiveApplications = (owner, callback) => {
     let filterParams = {};
 
-    filterParams['$or'] = [{end_time: {$exists: false}}, {end_time: ""}, {end_time: 0}];
+    filterParams['$or'] = [{end_time: {$exists: true}}, {end_time: ""}, {end_time: 0}];
 
     if (typeof owner !== 'undefined'){
         filterParams.owner = owner;
     }
         
-    Job
-    .distinct("ApplicationName", filterParams, {})
-    .lean()
-    .exec((err, apps) => {
-        callback(apps);
-        console.log("Output here -> ", apps);
-    });
-
-    // let queryDistinct = Job.distinct("ApplicationName", filterParams);
-
-    // queryDistinct
+    // Job
+    // .distinct("ApplicationName", filterParams, {})
     // .lean()
-    // .exec((err, app) => {
-    //     if(!err)
-    //         callback(app);
+    // .exec((err, apps) => {
+    //     callback(apps);
+    //     console.log("Output here -> ", apps);
     // });
+
+    let queryDistinct = Job.distinct("ApplicationName", filterParams);
+    
+
+    queryDistinct
+    .lean()
+    .exec((err, app) => {
+        if(!err)
+            callback(app);
+            // console.log("Output here -> ", app);
+    });
 };
 
 /**

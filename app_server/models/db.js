@@ -1,25 +1,22 @@
 /**
  *  Modules
  */
+const config = require('../lib/config');
 const mongoose = require('mongoose');
-
 mongoose.Promise = require('bluebird'); /*Promise is deprecated in recent monoogse versions so separate promise package is required */
 
-const dbURI = 'mongodb://127.0.0.1:27017/hpc_monitoring';
-
+// const dbURI = `mongodb://${config.db.host}:${config.db.port}/${config.db.db_name}`;
 let gracefulShutdown;
 
-let mongoOptions = {
-    useNewUrlParser: true, 
-    useUnifiedTopology: true,
-    useCreateIndex: true 
-};
+let db = {};
+
+db.dbURI = `mongodb://${config.db.host}:${config.db.port}/${config.db.db_name}`;
 
 // Connect to DB
-mongoose.connect(dbURI, mongoOptions);
+mongoose.connect(db.dbURI, config.db.mongoOptions);
 
 // Connection Events
-mongoose.connection.on('connected', () => console.log('Mongoose connected to ' + dbURI) );
+mongoose.connection.on('connected', () => console.log('\x1b[36m%s\x1b[0m','Mongoose connected to ' + db.dbURI) );
 mongoose.connection.on('error', (err) => console.log('Mongoose connection error: ' + err) );
 mongoose.connection.on('disconnected', () =>  console.log('Mongoose disconnected') );
 
@@ -48,4 +45,4 @@ process.on('SIGINT', () => {
 /* YOUR SCHEMAS & MODELS */
 require('./users');
 
-module.exports.dbURI = dbURI;
+module.exports = db;

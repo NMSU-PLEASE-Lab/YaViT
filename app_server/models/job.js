@@ -20,7 +20,8 @@ const jobSchema = new mongoose.Schema({
     slots : Number,
     ApplicationID : String,
     start_time : Number,
-    walltime :String
+    walltime :String,
+    nodeId : Number
 },
 {
     versionKey: false // You should be aware of the outcome after set to false

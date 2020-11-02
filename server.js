@@ -6,9 +6,7 @@ const io        = require('socket.io')(http);
 const morgan    = require('morgan');
 const favicon   = require('serve-favicon');
 const ingestor  = require('./app_server/ingestor');
-
-// For development purposes only
-const SERVER_PORT = 5000; // set port
+const config    = require('./app_server/lib/config');
 
 // Root path
 rootPath = __dirname;
@@ -35,9 +33,9 @@ app.use(express.static(__dirname + '/app_client', {
 app.use(favicon(__dirname + '/app_client/includes/images/favicon.ico'));
 
 //start app
-http.listen(SERVER_PORT, (err) => {
+http.listen(config.server.httpPort, (err) => {
     try {
-        console.log("Listening on port " + SERVER_PORT);
+        console.log('\x1b[36m%s\x1b[0m', `The server is listening on port ${config.server.httpPort} in ${config.server.envName} mode`);
     } catch (error) {
         console.log(err);
     }
@@ -52,7 +50,7 @@ require('./app_server/lib/passport');
 // Bring in the routes for the API
 require('./app_server/routes/api')(app, io);
 
-// Ingest SLURM info to DB
+// Ingest SLURM data to DB
 ingestor.init();
 
 // expose app
