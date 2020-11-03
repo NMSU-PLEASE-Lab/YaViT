@@ -84,4 +84,31 @@ Helpers.toTimeStamp = (time) => {
     return dateObj.getTime();
 };
 
+/**
+ * Check if a given item(Application name) exists among the list of applications fetched
+ * and return its object information
+ * @param {*} obj All application names
+ * @param {*} item App name to check for existence
+ */
+Helpers.checkIfAppExists = (obj, item) => {
+  let result = {};
+
+  let apps = obj.map((data) => {
+    return data.Name;
+  });
+
+  let checker = apps.includes(item);
+
+  result.appNames = apps;
+  result.exists = checker;
+
+  if (checker) {
+    result.index = apps.indexOf(item);
+    const { _id, Name } = obj[result.index];
+    result.data = { _id, Name };
+  }
+
+  return result;
+};
+
 module.exports = Helpers;

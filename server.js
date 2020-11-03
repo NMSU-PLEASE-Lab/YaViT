@@ -14,10 +14,10 @@ rootPath = __dirname;
 // log requests to console
 app.use(morgan('dev')); 
 
-// parses incoming requests with URL-encoded payloads
+// Parses incoming requests with URL-encoded payloads
 app.use(express.urlencoded({extended: true}));
 
-// parses incoming requests with JSON payloads
+// Parses incoming requests with JSON payloads
 app.use(express.json());
 
 // Serve static assets such as HTML files, images, and so on.
@@ -32,7 +32,7 @@ app.use(express.static(__dirname + '/app_client', {
 // Set favicon
 app.use(favicon(__dirname + '/app_client/includes/images/favicon.ico'));
 
-//start app
+// Start app
 http.listen(config.server.httpPort, (err) => {
     try {
         console.log('\x1b[36m%s\x1b[0m', `The server is listening on port ${config.server.httpPort} in ${config.server.envName} mode`);
@@ -50,7 +50,7 @@ require('./app_server/lib/passport');
 // Bring in the routes for the API
 require('./app_server/routes/api')(app, io);
 
-// Ingest SLURM data to DB
+// Ingestor driver to ingest SLURM data to DB
 ingestor.init();
 
 // expose app

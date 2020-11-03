@@ -1,7 +1,6 @@
 /**
  * Model for Ingest Collection
  */
-
 const mongoose = require('mongoose');
 
 // Create Ingest Schema

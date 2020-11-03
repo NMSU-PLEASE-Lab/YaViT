@@ -4,7 +4,7 @@
 const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema({
-    _id: Number,
+    _id: String,
     Name : {
         type: String,
         unique: true

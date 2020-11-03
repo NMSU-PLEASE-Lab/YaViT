@@ -1,3 +1,28 @@
+/**
+ * Ingestor Driver code
+
+ * *************************************************************************************************
+ * ** Description
+ * *************************************************************************************************
+ * The Ingestor driver code is basically responsible for ensuring that the SLURM data 
+ * required for the YaViT application is ingested into the database. The Ingestor driver
+ * initializes whenever the application is launched and during the initialization process,
+ * it checks to see if the Ingestor collection and the single ingest document exist. 
+ * 
+ * If the ingest collection and single ingest document exists, it reads the single document 
+ * which contains 'keys' & 'values' that represent the 'data status' of other collections 
+ * such as: nodes, node_job, application, application_user and jobs. If the value of a given 
+ * key is set to false, it means no data has been ingested for that given collection, therefore 
+ * the ingest driver will go ahead to ingest the data for that given collection and update its 
+ * value to true in the ingest document. 
+ * 
+ * If the ingest collection and single ingest document don't exist, the Ingestor driver creates 
+ * both the collection and the single document with a default value of false for each key in the 
+ * document. The Ingestor driver has been built to query HPC systems that use the SLURM scheduler for 
+ * job scheduling and management. All queries to fecth job and node details are all SLURM commands.
+ * ***************************************************************************************************
+ */
+
 const mongoose = require('mongoose');
 const { spawn } = require('child_process');
 const { resolve } = require('bluebird');
@@ -9,20 +34,26 @@ const Job = require('./models/job');
 const Node = require('./models/node');
 const NodeJob = require('./models/nodejob');
 const Application = require('./models/application');
-const IngestCollection = require('./models/ingest');
-const ingest = require('./models/ingest');
-
+const Ingest = require('./models/ingest');
 const ObjectID = require('bson').ObjectID;
 
+/**
+ * Ingestor object
+ */
 let Ingestor = {};
 
-// Get jobs in the queue
+/**
+ * Get running jobs
+ */
 Ingestor.watchQueue = async () => {
 }
 
+/**
+ * Create Ingest collection and Documents
+ */
 Ingestor.createCollection = async () => {
   return new Promise( (resolve, reject) => {
-    IngestCollection.createCollection((err, res) => {
+    Ingest.createCollection((err, res) => {
       if (err) throw err;
 
       console.log("Ingest Collection created!");
@@ -33,16 +64,31 @@ Ingestor.createCollection = async () => {
         reject(error)
       })
     });
-
-
-    // const ingestResult = await IngestCollection.find( (error, doc) => {
-    
-    //   if(error === null){
-    //     console.log('\x1b[31m','No Ingest Collection found in DB\n', '\x1b[32m', '==>', `Creating Ingest Collection in database...`);
-    //   }
-    // });
   });
 }
+
+/**
+ * Create Ingest collection documents
+ */
+Ingestor.createDocuments = async () => {
+
+  console.log("Creating Ingest collection documents...");
+
+  let documents = { 
+    JobsIngested: false,
+    NodesIngested: false,
+    NodeJobIngested: false,
+    ApplicationIngested: false,
+    ApplicationUserIngested: false
+  };
+
+  return new Promise( (resolve, reject) =>{
+    Ingest.insertMany(documents, (err, res) => {
+      if (err) reject({status: false, message: err, statusMsg: 'Error'});
+      resolve({ data: res, message: `${res.length} document${res.length > 1 ? 's were' : ' was'} successfully inserted.`})
+    });
+  });
+};
 
 
 /**
@@ -75,34 +121,11 @@ Ingestor.collectionExists = ( collectionName ) => {
 };
 
 /**
- * Create Ingest collection documents
- */
-Ingestor.createDocuments = async () => {
-
-  console.log("Creating Ingest collection documents...");
-
-  let documents = { 
-    JobsIngested: false,
-    NodesIngested: false,
-    NodeJobIngested: false,
-    ApplicationIngested: false,
-    ApplicationUserIngested: false
-  };
-
-  return new Promise( (resolve, reject) =>{
-    IngestCollection.insertMany(documents, (err, res) => {
-      if (err) reject({status: false, message: err, statusMsg: 'Error'});
-      resolve({ data: res, message: `${res.length} document${res.length > 1 ? 's were' : ' was'} successfully inserted.`})
-    });
-  });
-};
-
-/**
  * Check of if the Ingest collection has documents in it
  * @param {*} callback
  */
 Ingestor.hasDocuments = async ( callback ) => {
-  return IngestCollection.find( (err, res) => {
+  return Ingest.find( (err, res) => {
     if(!err){
       if(res.length > 0){
         callback(null, true);
@@ -116,7 +139,8 @@ Ingestor.hasDocuments = async ( callback ) => {
 };
 
 /**
- * 
+ * Confirm the exixtence of Ingest collection and Documents and create it
+ * if they don't exist
  * @param {*} callback 
  */
 Ingestor.getIngestCollectionDocs = async () => {
@@ -124,7 +148,6 @@ Ingestor.getIngestCollectionDocs = async () => {
   return new Promise( async (resolve, reject) => {
     // Check if Ingest Collection exists
     await Ingestor.collectionExists('ingest').then( async res  => {
-      
       if(res){
         // Check if the ingest collection has documents
         await Ingestor.hasDocuments((err, res) => {
@@ -137,7 +160,7 @@ Ingestor.getIngestCollectionDocs = async () => {
             });
           } else {
             // Return the documents found
-            const ingestResult = IngestCollection.find((err, docs)=>{
+            const ingestResult = Ingest.find((err, docs)=>{
               resolve(docs);
               return docs;
             });
@@ -167,13 +190,13 @@ Ingestor.getIngestCollectionDocs = async () => {
  */
 Ingestor.init = async () => {
 
+  // Confirm existence of Ingest collection and required 'ingest' documents
   await Ingestor.getIngestCollectionDocs();
 
-  const ingestResult = await IngestCollection.find();
+  // Get Ingest documents
+  const ingestResult = await Ingest.find();
 
   if(ingestResult.length > 0){
-
-    // const [{JobsIngested, NodesIngested, _id}] = ingestResult;
 
     let nodesIngested = []; // Placeholder for the returned list of ingested nodes.
     let jobsIngested = []; // Placeholder for the returned list of ingested jobs.
@@ -454,7 +477,7 @@ Ingestor.injestJNodes = async (nodesIngestId) => {
         try {
           Node.insertMany(NodesJsonFormat).then(async ( nodes )=>{ 
             // Update ingest jobs document
-            await IngestCollection.findOneAndUpdate({ _id: nodesIngestId },{ NodesIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
+            await Ingest.findOneAndUpdate({ _id: nodesIngestId },{ NodesIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
               if (err) reject(new Error(err)) 
             });
 
@@ -505,7 +528,7 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
           try {
             await Job.insertMany(res).then(async (jobs)=>{ 
               // Update ingest jobs document
-              await IngestCollection.findOneAndUpdate({ _id: jobsIngestId },{ JobsIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
+              await Ingest.findOneAndUpdate({ _id: jobsIngestId },{ JobsIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
                 if (err) reject(new Error(err)) 
                 // else return true;
               });
@@ -543,7 +566,7 @@ Ingestor.injestNodeJob = async (nodeJobIngestId) => {
       try {
         await NodeJob.insertMany(nodeJobs).then(async ()=>{ 
           // Update ingest jobs document
-          await IngestCollection.findOneAndUpdate({ _id: nodeJobIngestId },{ NodeJobIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
+          await Ingest.findOneAndUpdate({ _id: nodeJobIngestId },{ NodeJobIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
             if (err) reject(new Error(err)) 
             // else return true;
           });
@@ -561,21 +584,44 @@ Ingestor.injestNodeJob = async (nodeJobIngestId) => {
 };
 
 /**
+ * Update jobs with new Application IDs
+ * @param {*} jobs Job IDs and new Application IDs
+ */
+let updateJobsAppName = async (jobs) => {
+  return new Promise((resolve, reject) => {
+    let jobsLength = jobs.length;
+    let counter = 0;
+
+    // Loop through and update jobs with the new app IDs
+    jobs.forEach(async (obj) => {
+      try {
+        Job.findByIdAndUpdate(obj._id , { ApplicationID: `${obj.ApplicationID}`}, {new: true, useFindAndModify: false}, (err, doc) => {
+          if (err) reject(new Error(err));
+        })
+        counter += 1;
+     } catch (e) {
+        reject(e)
+     }      
+    });
+
+    if (counter === jobsLength) {
+      resolve({ status: true, nRows: counter });
+    }
+  });
+};
+
+/**
  * Add node_job data to the node_job collection 
  * if it doesn't exist in the db already
  * @param {*} nodeJobIngestId // Id of the ingestCollection, in order to keep track of what document to update
  */
 Ingestor.injestApplications = async (applicationIngestId, jobs) => {
   
-  let allApplications =  Array.from(new Set(jobs.map((obj) => obj.ApplicationName)))
+  let allApplications = Array.from(new Set(jobs.map((obj) => obj.ApplicationName)))
   .map( elem => {
     return {
-      Name: elem
+      Name: elem === null ? 'Unknown' : elem
   }});
-
-  let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
-
-  // console.log(jobsWithAppName)
   
   return new Promise( async (resolve, reject) => {
 
@@ -583,20 +629,30 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
       try {
         await Application.insertMany(allApplications).then(async (apps)=>{ 
           // Update ingest jobs document
-          await IngestCollection.findOneAndUpdate({ _id: applicationIngestId },{ ApplicationIngested: true }, {upsert: true, useFindAndModify: false}, async (err, doc) => {
+          await Ingest.findOneAndUpdate({ _id: applicationIngestId },{ ApplicationIngested: true }, {upsert: true, useFindAndModify: false}, async (err, doc) => {
             if (err) reject(new Error(err)) 
             // else return true;
             console.log('\x1b[35m%s\x1b[0m',"Updating job application IDs...");
 
-            // await Application.find({}, { Name:1, _id : 1 }).then( ( data ) => {
-            //   console.log(data);
-            // })
+            let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
 
-            let data = await Application.find({});
-            console.log(data);
-            
+            let appData = await Application.find({});
 
-            // Job.findOneAndUpdate()
+            let jobsWithNewAppName = jobsWithAppName.map((job) => {
+              let checkAppName = helpers.checkIfAppExists(appData, job.ApplicationName);
+              if (checkAppName.exists) {
+                return {
+                  _id: job._id,
+                  ApplicationID: checkAppName.data._id
+                };
+              }
+            });
+           
+            updateJobsAppName(jobsWithNewAppName).then((res) => {
+              console.log('\x1b[35m%s\x1b[0m',`${res.nRows} jobs application IDs modified...`);
+            }).catch( error => {
+              console.error('Error, ', error);
+            });
           });
 
           if(apps.length > 0 )

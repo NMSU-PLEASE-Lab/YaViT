@@ -20,7 +20,7 @@ module.exports.applicationCount = (req, res) => {
             ApplicationUser
             .countDocuments({"UserID": userId})
             .exec( (err, count) => {
-                console.log(count, 'Here--------');
+                // console.log(count, 'Here--------');
                 if (err)
                     return res.status(400).json({
                         "message": err
