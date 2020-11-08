@@ -9,7 +9,7 @@
     "crypto": "0.0.3",
     "debug": "^2.3.3",
     "express": "^4.17.1",
-    "express-jwt": "^5.1.0",
+    "express-jwt": "^6.0.0",
     "jsonwebtoken": "^5.7.0",
     "license-checker": "^9.0.2",
     "method-override": "^3.0.0",
