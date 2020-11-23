@@ -132,19 +132,12 @@ Ingestor.getRecentJobs = async () => {
   const computeNodes = await Node.find({});
 
   setInterval(() => {
-
     Ingestor
     .getLastJob() // Retrieve last job
     .then(res => {
-
-      // console.log('last job: ', res);
-      
       // Get the endtime of the last job and convert to yyyy-mm-dd format
       const lastDate = res.end_time+1000;
       const startDate = moment(lastDate).format('YYYY-MM-DD HH:mm:ss')
-
-      // console.log('Start Date: ', moment(res.end_time).format('YYYY-MM-DD HH:mm:ss'));
-      // console.log('Start Date: ', startDate);
 
       let buffer = "";
     
@@ -213,7 +206,6 @@ Ingestor.getRecentJobs = async () => {
     console.log('\x1b[0m');
 
   }, config.jobs.fetchInterval);
-
 };
 
 
@@ -632,8 +624,6 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // const startDate = config.jobs.ingestJobsFromDate; 
-  // const endDate = yesterday.toLocaleDateString('fr-CA'); // The previous day
   let buffer = "";
 
   const sacct = spawn('sacct', ['--allusers', '--allocation', '-p',`--starttime=${config.jobs.ingestJobsFromDate}`, `--format=${Ingestor.jobHeaders}`]);
@@ -693,7 +683,6 @@ Ingestor.injestNodeJob = async (nodeJobIngestId) => {
           // Update ingest jobs document
           await Ingest.findOneAndUpdate({ _id: nodeJobIngestId },{ NodeJobIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
             if (err) reject(new Error(err)) 
-            // else return true;
           });
 
           if(nodeJobs.length > 0 )
@@ -756,7 +745,7 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
           // Update ingest jobs document
           await Ingest.findOneAndUpdate({ _id: applicationIngestId },{ ApplicationIngested: true }, {upsert: true, useFindAndModify: false}, async (err, doc) => {
             if (err) reject(new Error(err)) 
-            // else return true;
+            
             console.log('\x1b[35m%s\x1b[0m',"Updating job application IDs...");
 
             let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
