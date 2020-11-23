@@ -101,14 +101,16 @@ Ingestor.init = async () => {
   console.log('\x1b[0m');
 };
 
-/**
- * Retrieve the last job
- */
 
+/**
+ * Retrieve the last job with end_time !=== 0
+ */
 Ingestor.getLastJob = () => {
   return new Promise( async (resolve, reject) => {
     try {
-      let lastJob = await Job.find().sort({'_id': -1}).limit(1);
+
+      // Get the last job id that has an end_time value
+      let lastJob = await Job.find({'end_time': {$ne: 0}}).sort({'_id': -1}).limit(1);
 
       if(typeof lastJob === 'object' && lastJob.length > 0){
         resolve(lastJob[0]);
@@ -134,10 +136,15 @@ Ingestor.getRecentJobs = async () => {
     Ingestor
     .getLastJob() // Retrieve last job
     .then(res => {
+
+      // console.log('last job: ', res);
       
       // Get the endtime of the last job and convert to yyyy-mm-dd format
       const lastDate = res.end_time+1000;
       const startDate = moment(lastDate).format('YYYY-MM-DD HH:mm:ss')
+
+      // console.log('Start Date: ', moment(res.end_time).format('YYYY-MM-DD HH:mm:ss'));
+      // console.log('Start Date: ', startDate);
 
       let buffer = "";
     
@@ -154,14 +161,38 @@ Ingestor.getRecentJobs = async () => {
       sacct.on('close', code => {
         let sacctData = buffer.split(/\n/);
         
-        if(sacctData.length && sacctData[1] !== ''){
+        if(sacctData.length > 2){
           Ingestor.filteredData( sacctData, computeNodes ).then( response => {
             helpers.injectParams( response ).then( async res => {
               try {
+                /**
+                 * Before we insert, let's query the DB and check if the 
+                 * injectParams response jobs already exist in the database.
+                 * If it exists, filter and strip the ones that exist and check if they are completed (if endtime is not 0)
+                 * Insert the ones that do not exist in the db finally, update the completed ones with end_time !== 0
+                */
+
+                // Retrieve only jobIDs from the response
+                let getJobIds = res.map((obj) => Number(obj._id));
+                
+                // Check database to see if any of the jobIds already exists
+                let getExistingJobs = await Job.find().where('_id').in(getJobIds).exec();
+
+                // Retrieve only jobIDs of the existing jobs in the DB (at this point existing jobs are likely to be 'running jobs')
+                let getExistingJobsIds = getExistingJobs.map(obj => Number(obj._id));
+                
+                // Remove the existing jobs and allow only the non-existing jobs to be inserted to the DB
+                let nonExistingJobs = res.map(obj => {
+                  let toNum = Number(obj._id);
+                  if(getExistingJobsIds.indexOf(toNum) < 0){
+                    return obj;
+                  }
+                }).filter(item => item !== undefined); // remove undefined values in array
+
                 // Ingest stdout to DB
-                await Job.insertMany(res).then(async (jobs)=>{ 
+                await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
                   if(res.length > 0 )
-                    console.log('\x1b[32m', '===>',  `${jobs.length} new jobs were successfully ingested to jobs collection`)
+                    console.log('\x1b[32m', '===>',  `${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`);
                 }).catch(error =>{ 
                   console.error('\x1b[31m', error)
                 }); 
@@ -174,12 +205,15 @@ Ingestor.getRecentJobs = async () => {
           console.log('\x1b[32m', '===>',  `No new jobs found!`);
         }
       });
-      
     }).catch( error => {
       console.error('\x1b[31m', error)
     });
 
+    // Always reset console (stdout) color
+    console.log('\x1b[0m');
+
   }, config.jobs.fetchInterval);
+
 };
 
 
@@ -464,7 +498,11 @@ Ingestor.filteredData = async (arr, nodes) => {
   
             // Convert to unix time stamp
             if (headers[i] === "end_time") {
-              data[headers[i]] = Date.parse(jobArrs[i]);
+              console.log('typeof: ', typeof jobArrs[i]);
+              console.log('time: ', jobArrs[i]);
+              let checkType = (jobArrs[i] === 'Unknown') ? 0 : jobArrs[i];
+              console.log('time: ', checkType);
+              data[headers[i]] = checkType === 0 ? 0 : Date.parse(checkType);
             }
 
             // Format exit_staus return value

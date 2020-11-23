@@ -29,6 +29,7 @@ Helpers.unitConverter = (meminfo) => {
 Helpers.getSeffMem = (seffInfo) => {
   // Regular expression for Memory Utilized retrieval
   let seffParam = new RegExp(/[a-z A-Z]+(:) [0-9]+([.])[0-9]+ (EB|KB|MB|GB)/gi);
+  console.log('Seffinfo: ', seffInfo);
   let arrSeffInfo = seffInfo.split(/\n/);
 
   // Iterate the list of seff params and retrieve 'Memory Utilized' value
@@ -41,15 +42,16 @@ Helpers.getSeffMem = (seffInfo) => {
   });
 
   // Separate the mem value and the unit then convert to bytes and return
-  let spiltMemInfo = getMemInfo[0].split(":")[1].trim().split(" ", 2);
-  let memInfoInBytes = Helpers.unitConverter(spiltMemInfo);
-  spiltMemInfo[1] = spiltMemInfo[1].replace('MB', 'M');
-  spiltMemInfo[1] = spiltMemInfo[1].replace('EB', 'K')
-  spiltMemInfo[1] = spiltMemInfo[1].replace('GB', 'G')
+  let splitMemInfo = getMemInfo[0].split(":")[1].trim().split(" ", 2);
+  console.log('Meminfo: ' , splitMemInfo);
+  let memInfoInBytes = Helpers.unitConverter(splitMemInfo);
+  splitMemInfo[1] = splitMemInfo[1].replace('MB', 'M');
+  splitMemInfo[1] = splitMemInfo[1].replace('EB', 'K')
+  splitMemInfo[1] = splitMemInfo[1].replace('GB', 'G')
   
   return {
     bytes: memInfoInBytes,
-    raw: spiltMemInfo.join("")
+    raw: splitMemInfo.join("")
   };
 };
 
@@ -109,6 +111,15 @@ Helpers.checkIfAppExists = (obj, item) => {
   }
 
   return result;
+};
+
+/**
+ * pluralize words
+ * @param {*} size 
+ * @param {*} word 
+ */
+Helpers.pluralize = (size, word) => {
+  return (size.length > 0 ) ? `${word}s` : `${word}`;
 };
 
 module.exports = Helpers;

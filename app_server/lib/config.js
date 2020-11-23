@@ -26,7 +26,7 @@ environments.staging = {
         
     'jobs': {
         'ingestJobsFromDate': '2020-09-01',
-        'fetchInterval': (1000*60)
+        'fetchInterval': (1000*30)
     }
 };
 
@@ -52,7 +52,7 @@ environments.production = {
         
     'jobs': {
         'ingestJobsFromDate': '2020-09-01',
-        'fetchInterval': (1000*60)
+        'fetchInterval': (1000*30)
     }
 };
 
