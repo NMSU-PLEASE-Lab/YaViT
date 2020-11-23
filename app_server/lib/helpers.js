@@ -29,7 +29,7 @@ Helpers.unitConverter = (meminfo) => {
 Helpers.getSeffMem = (seffInfo) => {
   // Regular expression for Memory Utilized retrieval
   let seffParam = new RegExp(/[a-z A-Z]+(:) [0-9]+([.])[0-9]+ (EB|KB|MB|GB)/gi);
-  console.log('Seffinfo: ', seffInfo);
+
   let arrSeffInfo = seffInfo.split(/\n/);
 
   // Iterate the list of seff params and retrieve 'Memory Utilized' value
@@ -41,9 +41,12 @@ Helpers.getSeffMem = (seffInfo) => {
     return false;
   });
 
+  let defaultMem = ['0.00', 'MB'];
+
+  getMemInfo = getMemInfo.length !== 0 ? getMemInfo : null;
+
   // Separate the mem value and the unit then convert to bytes and return
-  let splitMemInfo = getMemInfo[0].split(":")[1].trim().split(" ", 2);
-  console.log('Meminfo: ' , splitMemInfo);
+  let splitMemInfo = getMemInfo !== null ? getMemInfo[0].split(":")[1].trim().split(" ", 2) : defaultMem;
   let memInfoInBytes = Helpers.unitConverter(splitMemInfo);
   splitMemInfo[1] = splitMemInfo[1].replace('MB', 'M');
   splitMemInfo[1] = splitMemInfo[1].replace('EB', 'K')
@@ -89,8 +92,8 @@ Helpers.toTimeStamp = (time) => {
 /**
  * Check if a given item(Application name) exists among the list of applications fetched
  * and return its object information
- * @param {*} obj All application names
- * @param {*} item App name to check for existence
+ * @param {*} obj Object
+ * @param {*} item String
  */
 Helpers.checkIfAppExists = (obj, item) => {
   let result = {};
@@ -115,8 +118,8 @@ Helpers.checkIfAppExists = (obj, item) => {
 
 /**
  * pluralize words
- * @param {*} size 
- * @param {*} word 
+ * @param {*} size Array
+ * @param {*} word String
  */
 Helpers.pluralize = (size, word) => {
   return (size.length > 0 ) ? `${word}s` : `${word}`;

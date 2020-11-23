@@ -192,7 +192,7 @@ Ingestor.getRecentJobs = async () => {
                 // Ingest stdout to DB
                 await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
                   if(res.length > 0 )
-                    console.log('\x1b[32m', '===>',  `${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`);
+                    console.log('\x1b[32m', '===>',  `${jobs.length} new ${helpers.pluralize(jobs, 'job')} ingested to jobs collection successfully`);
                 }).catch(error =>{ 
                   console.error('\x1b[31m', error)
                 }); 
@@ -488,7 +488,8 @@ Ingestor.filteredData = async (arr, nodes) => {
 
             // Convert to unix time stamp
             if (headers[i] === "start_time") {
-              data[headers[i]] = Date.parse(jobArrs[i]);
+              let checkType = (jobArrs[i] === 'Unknown') ? 0 : jobArrs[i];
+              data[headers[i]] = checkType === 0 ? 0 : Date.parse(checkType);
             }
             
             // Convert to unix time stamp
@@ -498,10 +499,7 @@ Ingestor.filteredData = async (arr, nodes) => {
   
             // Convert to unix time stamp
             if (headers[i] === "end_time") {
-              console.log('typeof: ', typeof jobArrs[i]);
-              console.log('time: ', jobArrs[i]);
               let checkType = (jobArrs[i] === 'Unknown') ? 0 : jobArrs[i];
-              console.log('time: ', checkType);
               data[headers[i]] = checkType === 0 ? 0 : Date.parse(checkType);
             }
 
