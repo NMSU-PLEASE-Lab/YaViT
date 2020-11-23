@@ -161,8 +161,8 @@ Ingestor.getRecentJobs = async () => {
                 /**
                  * Before we insert, let's query the DB and check if the 
                  * injectParams response jobs already exist in the database.
-                 * If it exists, filter and strip the ones that exist and check if they are completed (if endtime is not 0)
-                 * Insert the ones that do not exist in the db finally, update the completed ones with end_time !== 0
+                 * If it exists, filter and strip the ones that exist.
+                 * Insert the ones that do not exist in the db and ignore the existing ones (This will be handled by queueWatcher method).
                 */
 
                 // Retrieve only jobIDs from the response
@@ -210,7 +210,13 @@ Ingestor.getRecentJobs = async () => {
 
 
 /**
- * Get running jobs
+ * Update running jobs
+ * 
+ * @TODO
+ * This method first checks the database to retrieve running jobs (without end_time or end_time=0)
+ * then it queries the slurm database to chect the current status of each of the fetched jobs
+ * next, it checks to see if the end_time of running jobs fetched from Yavit database is now completed.
+ * Next, it updates the completed jobs in the DB by updating the end_time of the jobs               
  */
 Ingestor.queueWatcher = async () => {
   
