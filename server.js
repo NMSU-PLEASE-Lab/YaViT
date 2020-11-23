@@ -53,5 +53,7 @@ require('./app_server/routes/api')(app, io);
 // Ingestor driver to ingest SLURM data to DB
 ingestor.init();
 
+ingestor.getRecentJobs();
+
 // expose app
 exports = module.exports = app;

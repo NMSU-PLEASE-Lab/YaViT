@@ -3,6 +3,7 @@
 **Developers:**  
 Ujjwal Panthi<br />
 Omar Aziz<br />
+Valentine Aduaka<br />
 
 ## Requirements
 You must have the following dependencies installed in order to run this application.<br/> 

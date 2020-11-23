@@ -24,6 +24,8 @@
  */
 
 const mongoose = require('mongoose');
+const { PerformanceObserver, performance } = require('perf_hooks');
+const moment = require('moment'); // require
 const { spawn } = require('child_process');
 const { resolve } = require('bluebird');
 const helpers = require('../app_server/lib/helpers');
@@ -40,13 +42,153 @@ const ObjectID = require('bson').ObjectID;
 /**
  * Ingestor object
  */
-let Ingestor = {};
+const Ingestor = {};
+
+/**
+ * Slurm sacct command --format headers to query for.
+ */
+Ingestor.jobHeaders = 'jobid,jobname,exit,group,maxrss,comment,SystemComment,state,partition,nnodes,ncpus,end,user,submit,priority,start,time,node';
+
+
+/**
+ * Start ingesting SLURM data to DB
+ */
+Ingestor.init = async () => {
+
+  // Confirm existence of Ingest collection and required 'ingest' documents
+  await Ingestor.getIngestCollectionDocs();
+
+  // Get Ingest documents
+  const ingestResult = await Ingest.find();
+
+  if(ingestResult.length > 0){
+
+    let nodesIngested = []; // Placeholder for the returned list of ingested nodes.
+    let jobsIngested = []; // Placeholder for the returned list of ingested jobs.
+
+    // Ingest Nodes
+    await Ingestor.confirmNodesIngestion(ingestResult[0])
+          .then( response => {
+            nodesIngested = response.data;
+            console.log('\x1b[32m', '==>', response.message)
+          })
+          .catch( error => console.error('\x1b[31m', error.message));
+
+    // Ingest jobs
+    await Ingestor.confirmJobsIngestion(ingestResult[0], nodesIngested)
+          .then( response => {
+            jobsIngested = response.data;
+            console.log('\x1b[32m', '==>', response.message)
+          })
+          .catch( error => console.error('\x1b[31m', error.message));
+
+    // Ingest application data
+    await Ingestor.confirmApplicationIngestion(ingestResult[0], jobsIngested)
+        .then( response => console.log('\x1b[32m', '==>', response.message))
+        .catch( error => console.error('\x1b[31m', error.message));
+
+    // Ingest node_job data
+    await Ingestor.confirmNodeJobIngestion(ingestResult[0])
+        .then( response => console.log('\x1b[32m', '==>', response.message))
+        .catch( error => console.error('\x1b[31m', error.message));
+    
+  } else {
+    console.error('\x1b[31m', "Please confirm that the Ingest Collection exists in DB then restart the app");
+    return false;
+  }
+
+  // Always reset console (stdout) color
+  console.log('\x1b[0m');
+};
+
+/**
+ * Retrieve the last job
+ */
+
+Ingestor.getLastJob = () => {
+  return new Promise( async (resolve, reject) => {
+    try {
+      let lastJob = await Job.find().sort({'_id': -1}).limit(1);
+
+      if(typeof lastJob === 'object' && lastJob.length > 0){
+        resolve(lastJob[0]);
+      } else {
+        return {};
+      }
+    } catch (error) {
+      reject(error)
+    }
+  });
+};
+
+
+/**
+ * Get recent jobs
+ */
+Ingestor.getRecentJobs = async () => {
+  // Get all nodes from YaViT db
+  const computeNodes = await Node.find({});
+
+  setInterval(() => {
+
+    Ingestor
+    .getLastJob() // Retrieve last job
+    .then(res => {
+      
+      // Get the endtime of the last job and convert to yyyy-mm-dd format
+      const lastDate = res.end_time+1000;
+      const startDate = moment(lastDate).format('YYYY-MM-DD HH:mm:ss')
+
+      let buffer = "";
+    
+      // Query slurm database and get all recent jobs until current time using the endtime of the last job
+      const sacct = spawn('sacct', ['--allusers', '--allocation', '-p',`--starttime=${startDate}`, `--format=${Ingestor.jobHeaders}`]);
+    
+      // Append standard out to buffer
+      sacct.stdout.on('data', data => buffer += data.toString());
+
+      // Output stdout errors
+      sacct.stderr.on("data", data => console.log(`stderr: ${data}`));
+
+      // Filter and store recent jobs into YaViT database.
+      sacct.on('close', code => {
+        let sacctData = buffer.split(/\n/);
+        
+        if(sacctData.length && sacctData[1] !== ''){
+          Ingestor.filteredData( sacctData, computeNodes ).then( response => {
+            helpers.injectParams( response ).then( async res => {
+              try {
+                // Ingest stdout to DB
+                await Job.insertMany(res).then(async (jobs)=>{ 
+                  if(res.length > 0 )
+                    console.log('\x1b[32m', '===>',  `${jobs.length} new jobs were successfully ingested to jobs collection`)
+                }).catch(error =>{ 
+                  console.error('\x1b[31m', error)
+                }); 
+              } catch (error) {
+                console.log('\x1b[31m', error);
+              }
+            });
+          });
+        } else {
+          console.log('\x1b[32m', '===>',  `No new jobs found!`);
+        }
+      });
+      
+    }).catch( error => {
+      console.error('\x1b[31m', error)
+    });
+
+  }, config.jobs.fetchInterval);
+};
+
 
 /**
  * Get running jobs
  */
-Ingestor.watchQueue = async () => {
-}
+Ingestor.queueWatcher = async () => {
+  
+};
 
 /**
  * Create Ingest collection and Documents
@@ -65,7 +207,7 @@ Ingestor.createCollection = async () => {
       })
     });
   });
-}
+};
 
 /**
  * Create Ingest collection documents
@@ -184,62 +326,10 @@ Ingestor.getIngestCollectionDocs = async () => {
   });
 };
 
-
-/**
- * Start ingesting SLURM data to DB
- */
-Ingestor.init = async () => {
-
-  // Confirm existence of Ingest collection and required 'ingest' documents
-  await Ingestor.getIngestCollectionDocs();
-
-  // Get Ingest documents
-  const ingestResult = await Ingest.find();
-
-  if(ingestResult.length > 0){
-
-    let nodesIngested = []; // Placeholder for the returned list of ingested nodes.
-    let jobsIngested = []; // Placeholder for the returned list of ingested jobs.
-
-    // Ingest Nodes
-    await Ingestor.confirmNodesIngestion(ingestResult[0])
-          .then( response => {
-            nodesIngested = response.data;
-            console.log('\x1b[32m', '==>', response.message)
-          })
-          .catch( error => console.error('\x1b[31m', error.message));
-
-    // Ingest jobs
-    await Ingestor.confirmJobsIngestion(ingestResult[0], nodesIngested)
-          .then( response => {
-            jobsIngested = response.data;
-            console.log('\x1b[32m', '==>', response.message)
-          })
-          .catch( error => console.error('\x1b[31m', error.message));
-
-    // Ingest application data
-    await Ingestor.confirmApplicationIngestion(ingestResult[0], jobsIngested)
-        .then( response => console.log('\x1b[32m', '==>', response.message))
-        .catch( error => console.error('\x1b[31m', error.message));
-
-    // Ingest node_job data
-    await Ingestor.confirmNodeJobIngestion(ingestResult[0])
-        .then( response => console.log('\x1b[32m', '==>', response.message))
-        .catch( error => console.error('\x1b[31m', error.message));
-    
-  } else {
-    console.error('\x1b[31m', "Please confirm that the Ingest Collection exists in DB then restart the app");
-    return false;
-  }
-
-  // Always reset console (stdout) color
-  console.log('\x1b[0m');
-};
-
 /**
  * Confirm whether or not the number of HPC jobs 
  * have been added to the jobs collection.
- * @param {*} param0 * Destructure Ingest collection results
+ * @param {*} param * Destructure Ingest collection results
  */
 Ingestor.confirmJobsIngestion = async ({JobsIngested, _id}, nodes) => {
   
@@ -303,9 +393,9 @@ Ingestor.confirmNodeJobIngestion = async ({NodeJobIngested, _id}) => {
 };
 
 /**
- * Clean stdout from sacct query
+ * Clean stdout of sacct query
  * @param {*} arr // Stdout raw data
- * @param {*} nodes // Nades in DB
+ * @param {*} nodes // Nades (compute nodes) in DB
  */
 Ingestor.filteredData = async (arr, nodes) => {
     let resultArr = [];
@@ -506,12 +596,11 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const startDate = config.jobs.ingestJobsFromDate; 
-  const endDate = yesterday.toLocaleDateString('fr-CA'); // The previous day
-  const headers = 'jobid,jobname,exit,group,maxrss,comment,SystemComment,state,partition,nnodes,ncpus,end,user,submit,priority,start,time,node';
+  // const startDate = config.jobs.ingestJobsFromDate; 
+  // const endDate = yesterday.toLocaleDateString('fr-CA'); // The previous day
   let buffer = "";
 
-  const sacct = spawn('sacct', ['--allusers', '--allocation', '-p',`--starttime=${startDate}`, `--format=${headers}`]);
+  const sacct = spawn('sacct', ['--allusers', '--allocation', '-p',`--starttime=${config.jobs.ingestJobsFromDate}`, `--format=${Ingestor.jobHeaders}`]);
  
   // Append standard out to buffer
   sacct.stdout.on('data', data => buffer += data.toString());
