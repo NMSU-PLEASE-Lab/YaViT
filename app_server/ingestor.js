@@ -5,7 +5,7 @@
  * ** Description
  * *************************************************************************************************
  * The Ingestor driver code is basically responsible for ensuring that the SLURM data 
- * required for the YaViT application is ingested into the database. The Ingestor driver
+ * required for the YaViT application to function is ingested into the database. The Ingestor driver
  * initializes whenever the application is launched and during the initialization process,
  * it checks to see if the Ingestor collection and the single ingest document exist. 
  * 
@@ -25,7 +25,7 @@
 
 const mongoose = require('mongoose');
 const { PerformanceObserver, performance } = require('perf_hooks');
-const moment = require('moment'); // require
+const moment = require('moment');
 const { spawn } = require('child_process');
 const { resolve } = require('bluebird');
 const helpers = require('../app_server/lib/helpers');
@@ -48,7 +48,6 @@ const Ingestor = {};
  * Slurm sacct command --format headers to query for.
  */
 Ingestor.jobHeaders = 'jobid,jobname,exit,group,maxrss,comment,SystemComment,state,partition,nnodes,ncpus,end,user,submit,priority,start,time,node';
-
 
 /**
  * Start ingesting SLURM data to DB
@@ -125,9 +124,9 @@ Ingestor.getLastJob = () => {
 
 
 /**
- * Get recent jobs
+ * Ingest recent jobs
  */
-Ingestor.getRecentJobs = async () => {
+Ingestor.recentJobsWorker = async () => {
   // Get all nodes from YaViT db
   const computeNodes = await Node.find({});
 
@@ -135,9 +134,9 @@ Ingestor.getRecentJobs = async () => {
     Ingestor
     .getLastJob() // Retrieve last job
     .then(res => {
+
       // Get the endtime of the last job and convert to yyyy-mm-dd format
-      const lastDate = res.end_time+1000;
-      const startDate = moment(lastDate).format('YYYY-MM-DD HH:mm:ss')
+      const startDate = helpers.fromDateTime(res.end_time, 1000);
 
       let buffer = "";
     
@@ -152,19 +151,13 @@ Ingestor.getRecentJobs = async () => {
 
       // Filter and store recent jobs into YaViT database.
       sacct.on('close', code => {
+
         let sacctData = buffer.split(/\n/);
         
         if(sacctData.length > 2){
           Ingestor.filteredData( sacctData, computeNodes ).then( response => {
             helpers.injectParams( response ).then( async res => {
               try {
-                /**
-                 * Before we insert, let's query the DB and check if the 
-                 * injectParams response jobs already exist in the database.
-                 * If it exists, filter and strip the ones that exist.
-                 * Insert the ones that do not exist in the db and ignore the existing ones (This will be handled by queueWatcher method).
-                */
-
                 // Retrieve only jobIDs from the response
                 let getJobIds = res.map((obj) => Number(obj._id));
                 
@@ -176,54 +169,140 @@ Ingestor.getRecentJobs = async () => {
                 
                 // Remove the existing jobs and allow only the non-existing jobs to be inserted to the DB
                 let nonExistingJobs = res.map(obj => {
-                  let toNum = Number(obj._id);
-                  if(getExistingJobsIds.indexOf(toNum) < 0){
+                  if(getExistingJobsIds.indexOf(Number(obj._id)) < 0){
                     return obj;
                   }
                 }).filter(item => item !== undefined); // remove undefined values in array
 
-                // Ingest stdout to DB
-                await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
-                  if(res.length > 0 )
-                    console.log('\x1b[32m', '===>',  `${jobs.length} new ${helpers.pluralize(jobs, 'job')} ingested to jobs collection successfully`);
-                }).catch(error =>{ 
-                  console.error('\x1b[31m', error)
-                }); 
+                if(nonExistingJobs.length > 0){
+                  // Ingest stdout to DB
+                  await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
+                    if(res.length > 0 ){
+                      console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] ${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`);
+                    }
+                  }).catch(error =>{ 
+                    console.error('\x1b[31m', error)
+                  }); 
+
+                  
+                } else {
+                  console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No recent jobs found!`);
+                }
               } catch (error) {
                 console.log('\x1b[31m', error);
               }
             });
           });
         } else {
-          console.log('\x1b[32m', '===>',  `No new jobs found!`);
+          console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No recent jobs found!`);
         }
       });
     }).catch( error => {
       console.error('\x1b[31m', error)
     });
 
-    // Always reset console (stdout) color
+  }, config.jobs.recentJobsWorkerInterval);
+
+  // Always reset console (stdout) color
     console.log('\x1b[0m');
-
-  }, config.jobs.fetchInterval);
 };
 
 
 /**
- * Update running jobs
- * 
- * @TODO
- * This method first checks the database to retrieve running jobs (without end_time or end_time=0)
- * then it queries the slurm database to chect the current status of each of the fetched jobs
- * next, it checks to see if the end_time of running jobs fetched from Yavit database is now completed.
- * Next, it updates the completed jobs in the DB by updating the end_time of the jobs               
+ * Update running jobs           
  */
-Ingestor.queueWatcher = async () => {
-  
+Ingestor.runningJobsWorker = async () => {
+  // Get all nodes from YaViT db
+  const computeNodes = await Node.find({});
+
+  setInterval( async () => {
+
+    let currentTime = moment();
+    let prevDate = currentTime.subtract(config.jobs.hpcMaxWalltime, 'days').format('YYYY-MM-DD HH:mm:ss');
+
+      try {
+        // Get runnibg jobs in DB with start_time greater than > 0 and end_time = 0
+        let runningJobs = await Job.find({end_time: 0, start_time: {$gte:0}}).exec();
+        let runningJobsIds = runningJobs.map((obj) => Number(obj._id));
+
+        let buffer = "";
+
+        // Query slurm database and get all recent jobs until current time using the endtime of the last job
+        const sacct = spawn('sacct', ['--allusers', '--allocation', '-p',`--starttime=${prevDate}`, `--format=${Ingestor.jobHeaders}`]);
+        
+        // Append standard out to buffer
+        sacct.stdout.on('data', data => buffer += data.toString());
+
+        // Output stdout errors
+        sacct.stderr.on("data", data => console.log(`stderr: ${data}`));
+
+        // Filter and store recent jobs into YaViT database.
+        sacct.on('close', code => {
+
+          let sacctData = buffer.split(/\n/);
+
+          if(sacctData.length > 2){
+            Ingestor.filteredData( sacctData, computeNodes ).then( response => {
+              helpers.injectParams( response ).then( async res => {
+                try {
+
+                  let counter = 0;
+                  
+                  // Compare and retrieve jobs that need to be updated
+                  let jobsToUpdate = res.map(obj => {
+                    if(runningJobsIds.indexOf(Number(obj._id)) >= 0 && obj.end_time > 0) 
+                      return obj;
+                  }).filter(item => item !== undefined); // remove undefined values in array
+
+                  if(jobsToUpdate.length > 0){
+                    // Loop through and update jobs
+                    jobsToUpdate.forEach(async (obj) => {
+                      try {
+                        Job.findByIdAndUpdate(obj._id , obj, {new: true, useFindAndModify: false}, (err, doc) => {
+                           if (err) reject(new Error(err));
+                        });
+                        counter += 1;
+                      } catch (error) {
+                        console.log('\x1b[31m', error);
+                      }      
+                    }); 
+
+                    if (counter === jobsToUpdate.length && counter > 0) {
+                      console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] Updated ${counter} finished ${helpers.pluralize(counter, 'job')} successfully`);
+                    }
+
+                    // Update jobs with the correct application IDs
+                    try {
+                      await Ingestor.injestApplications(null, jobsToUpdate).then( response => {
+                        console.log('Res: ', response);
+                      }).catch( error => {
+                          console.log('\x1b[31m', 'Here: ',  error);
+                      });
+                    } catch (error) {
+                      console.log('\x1b[31m', error);
+                    }
+                  } else {
+                    console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No running jobs found!`);
+                  }
+                } catch (error) {
+                  console.log('\x1b[31m', error);
+                }
+              });
+            });
+          } else {
+            console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No running jobs found!`);
+          }
+        });
+
+      } catch (error) {
+        // Db error
+        console.log('\x1b[31m', error);
+      }
+  }, config.jobs.runningJobsWorkerInterval);
 };
 
 /**
- * Create Ingest collection and Documents
+ * Create Ingest collection and document respectively.
  */
 Ingestor.createCollection = async () => {
   return new Promise( (resolve, reject) => {
@@ -267,7 +346,7 @@ Ingestor.createDocuments = async () => {
 
 /**
  * Check if  given collection name exists in the database
- * @param {*} collectionName 
+ * @param {*} Collection 
  */
 Ingestor.collectionExists = ( collectionName ) => {
   const dbConnect = mongoose.createConnection(db.dbURI, config.db.mongoOptions);
@@ -296,7 +375,7 @@ Ingestor.collectionExists = ( collectionName ) => {
 
 /**
  * Check of if the Ingest collection has documents in it
- * @param {*} callback
+ * @param {*} function
  */
 Ingestor.hasDocuments = async ( callback ) => {
   return Ingest.find( (err, res) => {
@@ -315,7 +394,7 @@ Ingestor.hasDocuments = async ( callback ) => {
 /**
  * Confirm the exixtence of Ingest collection and Documents and create it
  * if they don't exist
- * @param {*} callback 
+ * @param {*} function 
  */
 Ingestor.getIngestCollectionDocs = async () => {
 
@@ -731,52 +810,49 @@ let updateJobsAppName = async (jobs) => {
 };
 
 /**
- * Add node_job data to the node_job collection 
+ * 
  * if it doesn't exist in the db already
  * @param {*} nodeJobIngestId // Id of the ingestCollection, in order to keep track of what document to update
  */
 Ingestor.injestApplications = async (applicationIngestId, jobs) => {
+
   
   let allApplications = Array.from(new Set(jobs.map((obj) => obj.ApplicationName)))
   .map( elem => {
     return {
-      Name: elem === null ? 'Unknown' : elem
+      Name: elem === null ? 'unknown' : elem
   }});
+
+  let getExistingApps = await Application.find({}).lean().exec();
+
+  let getAppNamesOnly = getExistingApps.map(obj => obj.Name ).sort();
+
+  let newAppNames = allApplications.map(obj => {
+    if(getAppNamesOnly.indexOf(obj.Name) < 0){
+        return obj.Name;
+    }
+  }).sort().filter(item => item !== undefined);
+
+  let objNewAppNames = newAppNames.map(item => {
+    return {
+      Name: item
+    }
+  });
   
   return new Promise( async (resolve, reject) => {
 
     if(allApplications.length > 0){
       try {
-        await Application.insertMany(allApplications).then(async (apps)=>{ 
+        await Application.insertMany(objNewAppNames).then(async (apps)=>{ 
           // Update ingest jobs document
-          await Ingest.findOneAndUpdate({ _id: applicationIngestId },{ ApplicationIngested: true }, {upsert: true, useFindAndModify: false}, async (err, doc) => {
-            if (err) reject(new Error(err)) 
-            
-            console.log('\x1b[35m%s\x1b[0m',"Updating job application IDs...");
-
-            let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
-
-            let appData = await Application.find({});
-
-            let jobsWithNewAppName = jobsWithAppName.map((job) => {
-              let checkAppName = helpers.checkIfAppExists(appData, job.ApplicationName);
-              if (checkAppName.exists) {
-                return {
-                  _id: job._id,
-                  ApplicationID: checkAppName.data._id
-                };
-              }
+          if(applicationIngestId !== null){
+            await Ingest.findOneAndUpdate({ _id: applicationIngestId },{ ApplicationIngested: true }, {upsert: true, useFindAndModify: false}, async (err, doc) => {
+              if (err) reject(new Error(err)) 
             });
-           
-            updateJobsAppName(jobsWithNewAppName).then((res) => {
-              console.log('\x1b[35m%s\x1b[0m',`${res.nRows} jobs application IDs modified...`);
-            }).catch( error => {
-              console.error('Error, ', error);
-            });
-          });
-
+          }
           if(apps.length > 0 )
             resolve({status: true, message: `${apps.length} applications were successfully ingested`});
+            
         }).catch(error =>{ 
           reject(error);
         }); 
@@ -784,6 +860,28 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
         console.log('\x1b[31m', error);
       }
     }
+
+    console.log('\x1b[35m%s\x1b[0m',"Updating job application IDs...");
+
+    let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
+
+    let appData = await Application.find({});
+
+    let jobsWithNewAppName = jobsWithAppName.map((job) => {
+      let checkAppName = helpers.checkIfAppExists(appData, job.ApplicationName);
+      if (checkAppName.exists) {
+        return {
+          _id: job._id,
+          ApplicationID: checkAppName.data._id
+        };
+      }
+    });
+    
+    updateJobsAppName(jobsWithNewAppName).then((res) => {
+      console.log('\x1b[35m%s\x1b[0m',`${res.nRows} jobs application IDs modified...`);
+    }).catch( error => {
+      console.error('Error, ', error);
+    });
   });
 };
 

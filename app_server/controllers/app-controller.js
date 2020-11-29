@@ -3,7 +3,7 @@
  */
 
 const mongoose          = require('mongoose');
-const Application         = require('../models/application');
+const Application        = require('../models/application');
 let ApplicationUser     = mongoose.model('ApplicationUser', {}, 'application_user');
 const ctrlUser          = require('../controllers/user-controller');
 const ctrlJob           = require('../controllers/job-controller');
@@ -20,7 +20,7 @@ module.exports.applicationCount = (req, res) => {
             ApplicationUser
             .countDocuments({"UserID": userId})
             .exec( (err, count) => {
-                // console.log(count, 'Here--------');
+                console.log(count, 'Here--------', userId);
                 if (err)
                     return res.status(400).json({
                         "message": err

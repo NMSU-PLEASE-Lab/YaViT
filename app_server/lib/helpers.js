@@ -1,5 +1,8 @@
 
 const { spawn } = require('child_process');
+const moment = require('moment'); // require
+
+// Helpers Container
 let Helpers = {};
 
 /**
@@ -118,11 +121,29 @@ Helpers.checkIfAppExists = (obj, item) => {
 
 /**
  * pluralize words
- * @param {*} size Array
+ * @param {*} size Number
  * @param {*} word String
  */
-Helpers.pluralize = (size, word) => {
-  return (size.length > 0 ) ? `${word}s` : `${word}`;
+Helpers.pluralize = (length, word) => {
+  return (length > 1 || length == 0 ) ? ((length === 1) ? `${word}` : `${word}s`) : `${word}`;
+};
+
+/**
+ * Get current timestamp
+ */
+Helpers.timestamp = () => {
+  return moment().format('YYYY-MM-DD HH:mm:ss');;
+}
+
+/**
+ * Increment time by seconds
+ * @param {*} timestamp Date 
+ * @param {*} increment Milliseconds
+ */
+Helpers.fromDateTime = (timestamp, increment) => {
+  const currentDate = timestamp + increment;
+  const newDate = moment(currentDate).format('YYYY-MM-DD HH:mm:ss');
+  return newDate;
 };
 
 module.exports = Helpers;

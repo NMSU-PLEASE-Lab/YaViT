@@ -5,6 +5,7 @@ const _         = require('underscore');
 const mongoose  = require('mongoose');
 const ctrlNode  = require('../controllers/node-controller');
 const moment    = require('moment');
+const config    = require('../lib/config');
 const db        = require('../models/db');
 const Job       = require('../models/job');
 const NodeJob   = require('../models/nodejob');
@@ -210,8 +211,6 @@ module.exports.getJobs = (req, res) => {
         sortParams[req.body.columns[entry.column].data] = entry.dir == 'desc' ? -1 : 1;
     });
 
-    console.log('filterParams------', sortParams);
-
     Job
     .find(filterParams, {
         "_id": 1,
@@ -236,9 +235,6 @@ module.exports.getJobs = (req, res) => {
 
         if (err)
             return res.status(400).json({"message": err});
-
-        console.log('Error------', err);
-        console.log('Jobs------', jobs);
 
         NodeJob
         .find(
@@ -285,7 +281,7 @@ module.exports.getJobs = (req, res) => {
                 resp.recordsTotal = count;
                 resp.recordsFiltered = count;
                 resp.data = jobs;
-                console.log('Jobs------', resp);
+
                 return res.status(200).json(resp);
             });
         });
@@ -439,7 +435,6 @@ module.exports.getRecentJobs = (req, res) => {
             if (err)
                 return res.status(400).json({"message": err });
 
-                // console.log(jobs);
             for (let i = 0; i < jobs.length; i++) {
                 ( () => {
                     const tmp_i = i;
@@ -452,8 +447,6 @@ module.exports.getRecentJobs = (req, res) => {
                 // Modified line below to exclude .unix method which wrongly formats the timestamp
                 jobs[i]['duration'] = moment.duration(moment(jobs[i]['end_time']).diff(moment(jobs[i]['start_time']))).format("hh:mm:ss", {trim: false});
             }
-
-            // console.log(jobs);
 
             return res.status(200).json(jobs);
         });
@@ -585,14 +578,12 @@ module.exports.distinctActiveApplications = (owner, callback) => {
     // });
 
     let queryDistinct = Job.distinct("ApplicationName", filterParams);
-    
 
     queryDistinct
     .lean()
     .exec((err, app) => {
         if(!err)
             callback(app);
-            // console.log("Output here -> ", app);
     });
 };
 
@@ -690,7 +681,7 @@ module.exports.averageNumberOfNodesByApplication = (owner, callback) => {
     if (typeof req.query.owner !== 'undefined')
         filterParams.owner = req.query.owner;
 
-    MongoClient.connect(db.URI, (err, db) => {
+    MongoClient.connect(db.dbURI, config.db.mongoOptions, (err, db) => {
         db.collection('job')
         .find(filterParams, {
             "_id": 1,
