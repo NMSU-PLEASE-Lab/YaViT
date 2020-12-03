@@ -1,13 +1,6 @@
 
 const { spawn } = require('child_process');
-<<<<<<< HEAD
-const moment = require('moment'); // require
-
-// Helpers Container
-let Helpers = {};
-=======
 const Helpers = {};
->>>>>>> codeRefactor
 
 /**
  * Convert units to byte
