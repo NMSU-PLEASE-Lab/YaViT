@@ -146,4 +146,46 @@ Helpers.fromDateTime = (timestamp, increment) => {
   return newDate;
 };
 
+/**
+ * 
+ * @param {*} status String - sucess | error | process
+ * @param {*} message String
+ */
+Helpers.console = (...data) => {
+  let status = data[0];
+  let message = data[1];
+
+  const errorCode = '\x1b[31m%s\x1b[0m';
+  const successCode = '\x1b[32m%s\x1b[0m';
+  const processCode = '\x1b[34m%s\x1b[0m';
+  const normalCode = '\x1b[35m%s\x1b[0m';
+
+  let lCaseString = status.toLowerCase();
+
+  switch(lCaseString){
+    case 'success':
+      console.log(successCode, '==>', message);
+      break;
+    case 'error':
+      console.log(errorCode, '==>', message);
+      break;
+    case 'process':
+      console.log(processCode, '==>', message);
+      break;
+    case 'normal':
+      console.log(normalCode, '==>', message);
+      break;
+    default:
+      console.log(message);
+  }
+  console.log('\x1b[0m');
+};
+
+Helpers.out = {
+  error: (message) =>  Helpers.console('error', message),
+  success: (message) => Helpers.console('success', message),
+  process: (message) => Helpers.console('process', message),
+  normal: (message) => Helpers.console('normal', message)
+};
+
 module.exports = Helpers;

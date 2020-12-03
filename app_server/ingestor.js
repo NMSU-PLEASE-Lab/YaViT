@@ -69,30 +69,28 @@ Ingestor.init = async () => {
     await Ingestor.confirmNodesIngestion(ingestResult[0])
           .then( response => {
             nodesIngested = response.data;
-            console.log('\x1b[32m', '==>', response.message)
-          })
-          .catch( error => console.error('\x1b[31m', error.message));
+            helpers.out.success(response.message);
+          }).catch( error => helpers.out.error(error.message));
 
     // Ingest jobs
     await Ingestor.confirmJobsIngestion(ingestResult[0], nodesIngested)
           .then( response => {
             jobsIngested = response.data;
-            console.log('\x1b[32m', '==>', response.message)
-          })
-          .catch( error => console.error('\x1b[31m', error.message));
+            helpers.out.success(response.message);
+          }).catch( error => helpers.out.error(error.message));
 
     // Ingest application data
     await Ingestor.confirmApplicationIngestion(ingestResult[0], jobsIngested)
-        .then( response => console.log('\x1b[32m', '==>', response.message))
-        .catch( error => console.error('\x1b[31m', error.message));
+        .then( response => helpers.out.success(response.message))
+        .catch( error => helpers.out.error(error.message));
 
     // Ingest node_job data
     await Ingestor.confirmNodeJobIngestion(ingestResult[0])
-        .then( response => console.log('\x1b[32m', '==>', response.message))
-        .catch( error => console.error('\x1b[31m', error.message));
+        .then( response => helpers.out.success(response.message))
+        .catch( error => helpers.out.error(error.message));
     
   } else {
-    console.error('\x1b[31m', "Please confirm that the Ingest Collection exists in DB then restart the app");
+    helpers.out.error("Please confirm that the Ingest Collection exists in DB then restart the app");
     return false;
   }
 
@@ -147,7 +145,7 @@ Ingestor.recentJobsWorker = async () => {
       sacct.stdout.on('data', data => buffer += data.toString());
 
       // Output stdout errors
-      sacct.stderr.on("data", data => console.log(`stderr: ${data}`));
+      sacct.stderr.on("data", data => helpers.out.error(`stderr: ${data}`));
 
       // Filter and store recent jobs into YaViT database.
       sacct.on('close', code => {
@@ -178,27 +176,27 @@ Ingestor.recentJobsWorker = async () => {
                   // Ingest stdout to DB
                   await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
                     if(res.length > 0 ){
-                      console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] ${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`);
+                      helpers.out.success(`[${helpers.timestamp()}] ${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`)
                     }
                   }).catch(error =>{ 
-                    console.error('\x1b[31m', error)
+                    helpers.out.error(error);
                   }); 
 
                   
                 } else {
-                  console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No recent jobs found!`);
+                  helpers.out.normal(`[${helpers.timestamp()}] No recent jobs found!`);
                 }
               } catch (error) {
-                console.log('\x1b[31m', error);
+                helpers.out.error(error);
               }
             });
           });
         } else {
-          console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No recent jobs found!`);
+          helpers.out.normal(`[${helpers.timestamp()}] No recent jobs found!`);
         }
       });
     }).catch( error => {
-      console.error('\x1b[31m', error)
+      helpers.out.error(error);
     });
 
   }, config.jobs.recentJobsWorkerInterval);
@@ -234,7 +232,7 @@ Ingestor.runningJobsWorker = async () => {
         sacct.stdout.on('data', data => buffer += data.toString());
 
         // Output stdout errors
-        sacct.stderr.on("data", data => console.log(`stderr: ${data}`));
+        sacct.stderr.on("data", data => helpers.out.error(`stderr: ${data}`));
 
         // Filter and store recent jobs into YaViT database.
         sacct.on('close', code => {
@@ -263,40 +261,39 @@ Ingestor.runningJobsWorker = async () => {
                         });
                         counter += 1;
                       } catch (error) {
-                        console.log('\x1b[31m', error);
+                        helpers.out.error(error);
                       }      
                     }); 
 
                     if (counter === jobsToUpdate.length && counter > 0) {
-                      console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] Updated ${counter} finished ${helpers.pluralize(counter, 'job')} successfully`);
+                      helpers.out.success(`[${helpers.timestamp()}] Updated ${counter} finished ${helpers.pluralize(counter, 'job')} successfully`);
                     }
 
                     // Update jobs with the correct application IDs
                     try {
                       await Ingestor.injestApplications(null, jobsToUpdate).then( response => {
-                        console.log('Res: ', response);
                       }).catch( error => {
-                          console.log('\x1b[31m', 'Here: ',  error);
+                          helpers.out.error(error);
                       });
                     } catch (error) {
-                      console.log('\x1b[31m', error);
+                      helpers.out.error(error);
                     }
                   } else {
-                    console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No running jobs found!`);
+                    helpers.out.normal(`[${helpers.timestamp()}] No running jobs found!`);
                   }
                 } catch (error) {
-                  console.log('\x1b[31m', error);
+                  helpers.out.error(error);
                 }
               });
             });
           } else {
-            console.log('\x1b[32m', '===>',  `[${helpers.timestamp()}] No running jobs found!`);
+            helpers.out.normal(`[${helpers.timestamp()}] No running jobs found!`);
           }
         });
 
       } catch (error) {
         // Db error
-        console.log('\x1b[31m', error);
+        helpers.out.error(error);
       }
   }, config.jobs.runningJobsWorkerInterval);
 };
@@ -309,7 +306,7 @@ Ingestor.createCollection = async () => {
     Ingest.createCollection((err, res) => {
       if (err) throw err;
 
-      console.log("Ingest Collection created!");
+      helpers.out.success("Ingest Collection created!");
 
       Ingestor.createDocuments().then( response => {
         resolve(response)
@@ -325,7 +322,7 @@ Ingestor.createCollection = async () => {
  */
 Ingestor.createDocuments = async () => {
 
-  console.log("Creating Ingest collection documents...");
+  helpers.out.process("Creating Ingest collection documents...");
 
   let documents = { 
     JobsIngested: false,
@@ -406,10 +403,10 @@ Ingestor.getIngestCollectionDocs = async () => {
         await Ingestor.hasDocuments((err, res) => {
           if(!res){
             Ingestor.createDocuments().then( response => {
-              console.log(response.message);
+              helpers.out.success(response.message);
               resolve(response.data)
             }).catch( error => {
-              console.log(error);
+              helpers.out.error(error);
             });
           } else {
             // Return the documents found
@@ -425,14 +422,14 @@ Ingestor.getIngestCollectionDocs = async () => {
       } else {
         // If it doesn't exist, create the collection
         Ingestor.createCollection().then( response => {
-          console.log(response.message);
+          helpers.out.success(response.message);
           resolve(response.data);
         }).catch( error => {
-          console.log(error.message);
+          helpers.out.error(error.message);
         })
       };
     }).catch( error => {
-      console.log(error);
+      helpers.out.error(error);
     });
   });
 };
@@ -446,10 +443,10 @@ Ingestor.confirmJobsIngestion = async ({JobsIngested, _id}, nodes) => {
   
   return new Promise( (resolve, reject ) => {
     if(!JobsIngested) {
-      console.log('\x1b[35m%s\x1b[0m',"Ingesting jobs...");
+      helpers.out.process("Ingesting jobs...");
       Ingestor.injestJobs(_id, nodes).then( res => resolve( res )).catch( error => reject( error ));
     } else {
-      resolve({status: true, message: `No jobs to ingest!` });
+      resolve({status: true, message: `No Jobs to ingest!` });
     }
   });
 };
@@ -463,10 +460,10 @@ Ingestor.confirmApplicationIngestion = async ({ApplicationIngested, _id}, jobs) 
   
   return new Promise( (resolve, reject ) => {
     if(!ApplicationIngested) {
-      console.log('\x1b[35m%s\x1b[0m',"Ingesting Applications...");
+      helpers.out.process("Ingesting Applications...");
       Ingestor.injestApplications(_id, jobs).then( res => resolve( res )).catch( error => reject( error ));
     } else {
-      resolve({status: true, message: `No applications to ingest!` });
+      resolve({status: true, message: `No Applications to ingest!` });
     }
   });
 };
@@ -479,10 +476,10 @@ Ingestor.confirmApplicationIngestion = async ({ApplicationIngested, _id}, jobs) 
 Ingestor.confirmNodesIngestion = async ({NodesIngested, _id}) => {
   return new Promise( (resolve, reject ) => {
     if(!NodesIngested) {
-      console.log('\x1b[35m%s\x1b[0m',"Ingesting nodes...");
+      helpers.out.process("Ingesting nodes...");
       Ingestor.injestJNodes(_id).then( res => resolve( res )).catch( error => reject( error ));
     } else {
-      resolve({status: true, message: `No nodes to ingest!` });
+      resolve({status: true, message: `No Nodes to ingest!` });
     }
   });
 };
@@ -495,10 +492,10 @@ Ingestor.confirmNodesIngestion = async ({NodesIngested, _id}) => {
 Ingestor.confirmNodeJobIngestion = async ({NodeJobIngested, _id}) => {
   return new Promise( (resolve, reject ) => {
     if(!NodeJobIngested) {
-      console.log('\x1b[35m%s\x1b[0m',"Populating Node Job collection...");
+      helpers.out.process("Populating Node Job collection...");
       Ingestor.injestNodeJob(_id).then( res => resolve( res )).catch( error => reject( error ));
     } else {
-      resolve({status: true, message: `No node job data to ingest!` });
+      resolve({status: true, message: `No Node Job data to ingest!` });
     }
   });
 };
@@ -640,12 +637,12 @@ Ingestor.injestJNodes = async (nodesIngestId) => {
   });
 
   sinfo.stderr.on('data', (data) => {
-    console.error(`sinfo stderr: ${data}`);
+    helpers.out.error(`sinfo stderr: ${data}`);
   });
 
   sinfo.on('close', (code) => {
     if (code !== 0) {
-      console.log(`sinfo process exited with code ${code}`);
+      helpers.out.error(`sinfo process exited with code ${code}`);
     }
     awk.stdin.end();
   });
@@ -655,7 +652,7 @@ Ingestor.injestJNodes = async (nodesIngestId) => {
   });
 
   awk.stderr.on('data', (data) => {
-    console.error(`awk stderr: ${data}`);
+    helpers.out.error(`awk stderr: ${data}`);
   });
 
   return new Promise( (resolve, reject) => {
@@ -690,7 +687,7 @@ Ingestor.injestJNodes = async (nodesIngestId) => {
             reject(error);
           }); 
         } catch (error) {
-          console.log('\x1b[31m', error);
+          helpers.out.error( error);
         }
       }
     });
@@ -717,7 +714,7 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
   sacct.stdout.on('data', data => buffer += data.toString());
 
   // Output stdout errors
-  sacct.stderr.on("data", data => console.log(`stderr: ${data}`));
+  sacct.stderr.on("data", data => helpers.out.error(`stderr: ${data}`));
 
   // Ingest stdout to DB
   return new Promise((resolve, reject) => {
@@ -739,7 +736,7 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
               reject(error);
             }); 
           } catch (error) {
-            console.log('\x1b[31m', error);
+            helpers.out.error( error);
           }
         });
       });
@@ -771,12 +768,12 @@ Ingestor.injestNodeJob = async (nodeJobIngestId) => {
           });
 
           if(nodeJobs.length > 0 )
-            resolve({status: true, message: `${nodeJobs.length} nodejob data were successfully ingested to node_job collection`});
+            resolve({status: true, message: `${nodeJobs.length} Node Job data were successfully ingested to node_job collection`});
         }).catch(error =>{ 
           reject(error);
         }); 
       } catch (error) {
-        console.log('\x1b[31m', error);
+        helpers.out.error( error);
       }
     });
   });
@@ -857,11 +854,11 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
           reject(error);
         }); 
       } catch (error) {
-        console.log('\x1b[31m', error);
+        helpers.out.error( error);
       }
     }
 
-    console.log('\x1b[35m%s\x1b[0m',"Updating job application IDs...");
+    helpers.out.process("Updating job application IDs...");
 
     let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
 
@@ -878,9 +875,9 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
     });
     
     updateJobsAppName(jobsWithNewAppName).then((res) => {
-      console.log('\x1b[35m%s\x1b[0m',`${res.nRows} jobs application IDs modified...`);
+      helpers.out.success(`${res.nRows} jobs application IDs modified...`);
     }).catch( error => {
-      console.error('Error, ', error);
+      helpers.out.error( error);
     });
   });
 };

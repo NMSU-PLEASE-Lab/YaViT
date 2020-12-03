@@ -7,6 +7,7 @@ const morgan    = require('morgan');
 const favicon   = require('serve-favicon');
 const ingestor  = require('./app_server/ingestor');
 const config    = require('./app_server/lib/config');
+const Helpers = require('./app_server/lib/helpers');
 
 // Root path
 rootPath = __dirname;
