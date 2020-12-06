@@ -26,7 +26,10 @@ angular.module('hpcMonitoringApp')
                     DTColumnBuilder.newColumn('ApplicationName').renderWith(function (data, type, full) {
                         return '<a href="" class="btn btn-link" ng-click="onJobRunClicked(\'' + data + '\')">' + data + '</a>';
                     }).withTitle('Application Name'),
-                    DTColumnBuilder.newColumn('NumberOfJobs').withTitle('Number Of Jobs')
+                    DTColumnBuilder.newColumn('NumberOfJobs').withTitle('Number Of Jobs'),
+                    DTColumnBuilder.newColumn('HighestPerformance').withTitle('Highest Performance Job'),
+                    DTColumnBuilder.newColumn('AveragePerformance').withTitle('Average Performance Job'),
+                    DTColumnBuilder.newColumn('LowestPerformance').withTitle('Lowest Performance Job')
                 ];
                 $scope.onJobRunClicked = function (name) {
                     $state.go('user.jobhome', {app_name: name});

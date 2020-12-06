@@ -36,6 +36,7 @@ const Job = require('./models/job');
 const Node = require('./models/node');
 const NodeJob = require('./models/nodejob');
 const Application = require('./models/application');
+const ApplicationUser = require('./models/applicationuser');
 const Ingest = require('./models/ingest');
 const ObjectID = require('bson').ObjectID;
 
@@ -86,6 +87,11 @@ Ingestor.init = async () => {
 
     // Ingest node_job data
     await Ingestor.confirmNodeJobIngestion(ingestResult[0])
+        .then( response => helpers.out.success(response.message))
+        .catch( error => helpers.out.error(error.message));
+        
+    // Ingest node_job data
+    await Ingestor.confirmApplicationUserIngestion(ingestResult[0])
         .then( response => helpers.out.success(response.message))
         .catch( error => helpers.out.error(error.message));
     
@@ -176,7 +182,7 @@ Ingestor.recentJobsWorker = async () => {
                   // Ingest stdout to DB
                   await Job.insertMany(nonExistingJobs).then(async (jobs)=>{ 
                     if(res.length > 0 ){
-                      helpers.out.success(`[${helpers.timestamp()}] ${jobs.length} new ${helpers.pluralize(jobs.length, 'job')} ingested to jobs collection successfully`)
+                      helpers.out.success(`[${helpers.timestamp()}] [${jobs.length}] new ${helpers.pluralize(jobs.length, 'job')} ingested into jobs collection successfully`)
                     }
                   }).catch(error =>{ 
                     helpers.out.error(error);
@@ -322,7 +328,7 @@ Ingestor.createCollection = async () => {
  */
 Ingestor.createDocuments = async () => {
 
-  helpers.out.process("Creating Ingest collection documents...");
+  helpers.out.process("Creating Ingest collection documents");
 
   let documents = { 
     JobsIngested: false,
@@ -501,6 +507,22 @@ Ingestor.confirmNodeJobIngestion = async ({NodeJobIngested, _id}) => {
 };
 
 /**
+ * Confirm whether or not the application_user data have
+ * been added to the application_user collection
+ * @param {*} param0 
+ */
+Ingestor.confirmApplicationUserIngestion = async ({ApplicationUserIngested, _id}) => {
+  return new Promise( (resolve, reject ) => {
+    if(!ApplicationUserIngested) {
+      helpers.out.process("Populating Application User collection...");
+      Ingestor.ingestApplicationUser(_id).then( res => resolve( res )).catch( error => reject( error ));
+    } else {
+      resolve({status: true, message: `No Application User data to ingest!` });
+    }
+  });
+};
+
+/**
  * Clean stdout of sacct query
  * @param {*} arr // Stdout raw data
  * @param {*} nodes // Nades (compute nodes) in DB
@@ -559,6 +581,10 @@ Ingestor.filteredData = async (arr, nodes) => {
             // Generate app ID only if App name exists
             let id  = new ObjectID();
             data.ApplicationID = data.ApplicationName !== null ? id.toString() : "";
+
+            // Add job performance score
+            const randVal = helpers.getRandomPerformanceScore(config.jobs.maxJobPerformanceScore);
+            data.performance = randVal;
 
             // Convert to unix time stamp
             if (headers[i] === "start_time") {
@@ -682,7 +708,7 @@ Ingestor.injestJNodes = async (nodesIngestId) => {
             });
 
             if(NodesJsonFormat.length > 0 )
-              resolve({status: true, data: nodes, message: `${NodesJsonFormat.length} nodes were successfully ingested to nodes collection`});
+              resolve({status: true, data: nodes, message: `[${NodesJsonFormat.length}] ${helpers.pluralize(NodesJsonFormat.length, 'node')} ingested into nodes collection successfully`});
           }).catch(error =>{ 
             reject(error);
           }); 
@@ -731,7 +757,7 @@ Ingestor.injestJobs = async (jobsIngestId, nodes) => {
               });
 
               if(res.length > 0 )
-                resolve({status: true, data: jobs, message: `${jobs.length} jobs were successfully ingested to jobs collection`});
+                resolve({status: true, data: jobs, message: `[${jobs.length}] ${helpers.pluralize('jobs.length', 'job')} ingested into jobs collection successfully`});
             }).catch(error =>{ 
               reject(error);
             }); 
@@ -768,7 +794,7 @@ Ingestor.injestNodeJob = async (nodeJobIngestId) => {
           });
 
           if(nodeJobs.length > 0 )
-            resolve({status: true, message: `${nodeJobs.length} Node Job data were successfully ingested to node_job collection`});
+            resolve({status: true, message: `[${nodeJobs.length}] ${helpers.pluralize(nodeJobs.length,'node job')} data ingested into node_job collection succesfully`});
         }).catch(error =>{ 
           reject(error);
         }); 
@@ -847,8 +873,33 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
               if (err) reject(new Error(err)) 
             });
           }
-          if(apps.length > 0 )
-            resolve({status: true, message: `${apps.length} applications were successfully ingested`});
+          if(apps.length > 0 ){
+            // Updating application IDs
+            helpers.out.process("Updating job application IDs");
+
+            let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
+
+            let appData = await Application.find({});
+
+            let jobsWithNewAppName = jobsWithAppName.map((job) => {
+              let checkAppName = helpers.checkIfAppExists(appData, job.ApplicationName);
+              if (checkAppName.exists) {
+                return {
+                  _id: job._id,
+                  ApplicationID: checkAppName.data._id
+                };
+              }
+            });
+            
+            updateJobsAppName(jobsWithNewAppName).then((res) => {
+              resolve({status: true, message: `[${apps.length}] ${helpers.pluralize(apps.length, 'applications')} ingested successfully and [${res.nRows}] ${helpers.pluralize(res.nRows, 'job')} application IDs modified`});
+
+              // helpers.out.success(`${res.nRows} jobs application IDs modified`);
+            }).catch( error => {
+              helpers.out.error( error);
+            });
+          }
+
             
         }).catch(error =>{ 
           reject(error);
@@ -857,28 +908,71 @@ Ingestor.injestApplications = async (applicationIngestId, jobs) => {
         helpers.out.error( error);
       }
     }
+  });
+};
 
-    helpers.out.process("Updating job application IDs...");
+Ingestor.getUsersApplication = async ( users, key, fields) => {
+  let getUsers = users.map( obj => obj.Name);
+  let jobs = await Job.find({'owner': { $in: getUsers}}).where(key).in(fields).exec();
 
-    let jobsWithAppName = jobs.filter( obj => obj.ApplicationName !== null);
+  let storeArray = [];
+  let storeObject = [];
 
-    let appData = await Application.find({});
-
-    let jobsWithNewAppName = jobsWithAppName.map((job) => {
-      let checkAppName = helpers.checkIfAppExists(appData, job.ApplicationName);
-      if (checkAppName.exists) {
-        return {
-          _id: job._id,
-          ApplicationID: checkAppName.data._id
-        };
+  if(jobs.length){
+    jobs.map( obj => {
+      // Filter users ids and jobs
+      let userId = users.map(item => item.Name === obj.owner ? item._id : '').filter( item => (item !== undefined && item !== ''));
+      let concatStr = `${obj.ApplicationName} ${obj.owner}`;
+      let objData = {
+        ApplicationName: obj.ApplicationName,
+        ApplicationID: obj.ApplicationID,
+        UserName: obj.owner,
+        UserID: userId[0].toString()
+      };
+      
+      if(storeArray.indexOf(concatStr) < 0){
+        storeArray.push(concatStr);
+        storeObject.push(objData);
       }
     });
-    
-    updateJobsAppName(jobsWithNewAppName).then((res) => {
-      helpers.out.success(`${res.nRows} jobs application IDs modified...`);
-    }).catch( error => {
-      helpers.out.error( error);
+  
+    return new Promise((resolve, reject) => {
+      if( storeObject.length > 0)
+        resolve(storeObject)
     });
+  }
+};
+
+/**
+ * 
+ * @param {*} applicationUserIngestId 
+ */
+Ingestor.ingestApplicationUser = async (applicationUserIngestId) => {
+  return new Promise(async (resolve, reject) => {
+    const key = 'ApplicationName';
+
+    try {
+      let allApplications = await Application.distinct('Name');
+      let userObj = await User.find({UserType: {$ne: 1}}).exec();
+  
+      Ingestor.getUsersApplication(userObj, key, allApplications).then(async res => {
+        
+        await ApplicationUser.insertMany(res).then(async (apps)=>{ 
+          // Update ingest jobs document
+          await Ingest.findOneAndUpdate({ _id: applicationUserIngestId },{ ApplicationUserIngested: true }, {upsert: true, useFindAndModify: false}, (err, doc) => {
+            if (err) reject(new Error(err)) ;
+          });
+  
+          if(res.length > 0 )
+            resolve({status: true, data: apps, message: `[${apps.length}] ${helpers.pluralize(apps.length, 'application')} ingested into Application User collection successfully`});
+        }).catch(error =>{ 
+          reject(error);
+        });
+      });
+      
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 

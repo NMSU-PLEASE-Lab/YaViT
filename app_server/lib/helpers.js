@@ -1,5 +1,6 @@
 
 const { spawn } = require('child_process');
+const moment = require('moment');
 const Helpers = {};
 
 /**
@@ -144,7 +145,7 @@ Helpers.fromDateTime = (timestamp, increment) => {
 };
 
 /**
- * 
+ * Return formatted stdout
  * @param {*} status String - sucess | error | process
  * @param {*} message String
  */
@@ -178,11 +179,23 @@ Helpers.console = (...data) => {
   console.log('\x1b[0m');
 };
 
+
+/**
+ * 
+ */
 Helpers.out = {
   error: (message) =>  Helpers.console('error', message),
   success: (message) => Helpers.console('success', message),
   process: (message) => Helpers.console('process', message),
   normal: (message) => Helpers.console('normal', message)
+};
+
+/**
+ * Get random float value
+ * @param {*} max 
+ */
+Helpers.getRandomPerformanceScore = (max) => {
+  return ((Math.random() * (max - 0)) + 0).toFixed(2);
 };
 
 module.exports = Helpers;

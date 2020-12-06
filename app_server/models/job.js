@@ -21,7 +21,8 @@ const jobSchema = new mongoose.Schema({
     ApplicationID : String,
     start_time : Number,
     walltime :String,
-    nodeId : Number
+    nodeId : Number,
+    performance : String
 },
 {
     versionKey: false // You should be aware of the outcome after set to false

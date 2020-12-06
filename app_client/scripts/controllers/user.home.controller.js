@@ -221,8 +221,6 @@ angular.module('hpcMonitoringApp')
                         $timeout.cancel($scope.timeout);
                     }
                 });
-
-
             }]);
 
 

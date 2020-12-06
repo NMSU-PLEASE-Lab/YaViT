@@ -28,7 +28,9 @@ environments.staging = {
         'ingestJobsFromDate': '2020-09-01',
         'recentJobsWorkerInterval': (1000*60), // One minute
         'runningJobsWorkerInterval': (1000*30), // 30 seconds
-        'hpcMaxWalltime': 7
+        'hpcMaxWalltime': 7,
+        'maxJobPerformanceScore': 100,
+        'maxJobPerformanceCount': 30
     }
 };
 
@@ -56,7 +58,9 @@ environments.production = {
         'ingestJobsFromDate': '2020-09-01',
         'recentJobsWorkerInterval': (1000*60), // One minute
         'runningJobsWorkerInterval': (1000*30), // 30 seconds
-        'hpcMaxWalltime': 7
+        'hpcMaxWalltime': 7,
+        'maxJobPerformanceScore': 100,
+        'maxJobPerformanceCount': 0
     }
 };
 
