@@ -5,10 +5,10 @@
   "dependencies": {
     "authenticate-pam": "^1.0.2",
     "bluebird": "^3.5.0",
-    "body-parser": "^1.19.0",
+    "body-parser": "^1.20.1",
     "crypto": "0.0.3",
     "debug": "^2.3.3",
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "express-jwt": "^5.1.0",
     "jsonwebtoken": "^5.7.0",
     "license-checker": "^9.0.2",
