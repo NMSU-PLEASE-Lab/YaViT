@@ -10,7 +10,7 @@
     "debug": "^2.3.3",
     "express": "^4.17.1",
     "express-jwt": "^6.0.0",
-    "jsonwebtoken": "^5.7.0",
+    "jsonwebtoken": "^9.0.2",
     "license-checker": "^9.0.2",
     "method-override": "^3.0.0",
     "moment": "^2.17.1",
